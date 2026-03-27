@@ -1375,24 +1375,27 @@ async function generateAndPlayVoice() {
   console.log('[Music] Prompt:', prompt.slice(0,120));
 
   // Use Cloudflare proxy if set, else direct
-  const proxyBase = getProxyUrl();
-  // Music endpoint goes through proxy differently — use direct if no proxy
-  const endpoint  = proxyBase
-    ? `${proxyBase}/music-compose`
-    : MUSIC_API;
+  // Music API — route through Cloudflare Worker (handles CORS)
+  const elabsKeyClean = elabsKey.trim();
+  const proxyBase     = getProxyUrl();
+  const musicEndpoint = proxyBase
+    ? `${proxyBase}/music-compose`   // Worker v2 routes this to /v1/music/compose
+    : MUSIC_API;                     // Direct (may fail CORS on GitHub Pages)
+
+  console.log('[Music] Endpoint:', musicEndpoint.slice(0,60));
 
   try {
-    const res = await fetch(endpoint === MUSIC_API ? MUSIC_API : endpoint, {
+    const res = await fetch(musicEndpoint, {
       method: 'POST',
       headers: {
-        'xi-api-key':    elabsKey,
-        'Authorization': `Bearer ${elabsKey}`,
+        'xi-api-key':    elabsKeyClean,
+        'Authorization': `Bearer ${elabsKeyClean}`,
         'Content-Type':  'application/json',
         'Accept':        'audio/mpeg',
       },
       body: JSON.stringify({
-        prompt:          prompt,
-        music_length_ms: 60000,   // 60 seconds
+        text:     prompt,   // ElevenLabs Music API uses 'text' not 'prompt'
+        duration: 60,       // seconds (not ms)
       })
     });
 
