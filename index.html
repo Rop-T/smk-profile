@@ -1069,4 +1069,44 @@ Format:
 
   btn.disabled = false; btn.textContent = '🎤 GENERATE';
 }
+
+// ── API KEY MANAGEMENT ──────────────────────────────────
+function saveApiKey() {
+  const val = document.getElementById('apiKeyInput').value.trim();
+  const err = document.getElementById('apiErr');
+  if (!val.startsWith('sk-ant-') && !val.startsWith('sk-')) {
+    err.style.display = 'block'; return;
+  }
+  err.style.display = 'none';
+  localStorage.setItem('smk_api_key', val);
+  document.getElementById('api-modal').classList.add('hidden');
+}
+// Auto-hide modal if key already saved
+(function(){
+  const key = localStorage.getItem('smk_api_key');
+  if (key && (key.startsWith('sk-ant-') || key.startsWith('sk-'))) {
+    const m = document.getElementById('api-modal');
+    if (m) m.classList.add('hidden');
+  }
+})();
+
+// ── SCROLL ANIMATIONS ───────────────────────────────────
+const _obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('show');
+    e.target.querySelectorAll('.mbar-fill, .cap-bar-fill').forEach(b => {
+      const w = b.dataset.w; if (w) setTimeout(() => b.style.width = w+'%', 300);
+    });
+  });
+}, { threshold: 0.12 });
+document.querySelectorAll('.anim').forEach(el => _obs.observe(el));
+setTimeout(() => {
+  document.querySelectorAll('.mbar-fill, .cap-bar-fill').forEach(b => {
+    if (b.closest('.anim')?.classList.contains('show')) {
+      const w = b.dataset.w; if (w) b.style.width = w+'%';
+    }
+  });
+}, 700);
+
 </script></body></html>
