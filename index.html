@@ -592,15 +592,22 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
     <div style="margin-top:16px"></div>
     <div class="api-box-label">ElevenLabs API Key <span style="opacity:.5">(สำหรับ เสียง Rap)</span></div>
     <input class="api-box-input" id="elabsInput" type="password"
-      placeholder="sk_... หรือ xl_..."
+      placeholder="sk_..."
       onkeydown="if(event.key==='Enter') saveApiKey()" />
+
+    <div style="margin-top:12px"></div>
+    <div class="api-box-label">Cloudflare Worker URL <span style="opacity:.5">(Proxy — ดูคำแนะนำด้านล่าง)</span></div>
+    <input class="api-box-input" id="proxyInput" type="text"
+      placeholder="https://YOUR-WORKER.workers.dev"
+      onkeydown="if(event.key==='Enter') saveApiKey()" style="font-size:11px;letter-spacing:.02em"/>
 
     <div class="api-box-err" id="apiErr"></div>
     <button class="api-box-btn" onclick="saveApiKey()" style="margin-top:16px">เข้าสู่ระบบ →</button>
     <div class="api-box-note">
-      Keys จะถูกเก็บไว้ใน Browser เท่านั้น ไม่มีการส่งออก<br>
+      Keys เก็บใน Browser เท่านั้น ไม่ส่งออก<br>
       Anthropic: <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--cyan)">console.anthropic.com</a> &nbsp;|&nbsp;
-      ElevenLabs: <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" style="color:var(--cyan)">elevenlabs.io</a>
+      ElevenLabs: <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" style="color:var(--cyan)">elevenlabs.io</a><br>
+      Cloudflare Worker: <a href="https://dash.cloudflare.com/?to=/:account/workers" target="_blank" style="color:var(--cyan)">dash.cloudflare.com → Workers</a>
     </div>
   </div>
 </div>
@@ -928,6 +935,11 @@ function saveApiKey() {
   if (elabsKey.trim().length > 10) {
     localStorage.setItem('smk_elabs_key', elabsKey.trim());
   }
+  const proxyEl = document.getElementById('proxyInput');
+  const proxyUrl = proxyEl ? proxyEl.value.trim().replace(/\/$/, '') : '';
+  if (proxyUrl.startsWith('https://')) {
+    localStorage.setItem('smk_proxy_url', proxyUrl);
+  }
   const m = document.getElementById('api-modal');
   if(m) m.classList.add('hidden');
 }
@@ -958,7 +970,11 @@ function getApiKey() {
 
 function getElabsKey() {
   const k = localStorage.getItem('smk_elabs_key') || '';
-  return k.trim().replace(/[\r\n\t]/g, '');  // strip any accidental whitespace/newlines
+  return k.trim().replace(/[\r\n\t]/g, '');
+}
+
+function getProxyUrl() {
+  return localStorage.getItem('smk_proxy_url') || '';
 }
 
 // Auto-hide modal if Anthropic key exists
@@ -1314,13 +1330,21 @@ function setElabsStatus(msg, show=true) {
 async function fetchElabsAudio(text, voiceId, apiKey) {
   // ElevenLabs requires both headers for browser-based calls
   const cleanKey = apiKey.trim();
-  const res = await fetch(`${ELABS_API}/${voiceId}?output_format=mp3_44100_128`, {
+  // Use Cloudflare Worker proxy if configured (fixes CORS from GitHub Pages)
+  const proxyBase = getProxyUrl();
+  const endpoint  = proxyBase
+    ? `${proxyBase}/${voiceId}?output_format=mp3_44100_128`
+    : `${ELABS_API}/${voiceId}?output_format=mp3_44100_128`;
+
+  console.log('[ElevenLabs] Endpoint:', endpoint.slice(0, 60));
+
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'xi-api-key': cleanKey,
+      'xi-api-key':    cleanKey,
       'Authorization': `Bearer ${cleanKey}`,
-      'Content-Type': 'application/json',
-      'Accept': 'audio/mpeg',
+      'Content-Type':  'application/json',
+      'Accept':        'audio/mpeg',
     },
     body: JSON.stringify({
       text: text,
@@ -1362,7 +1386,17 @@ async function generateAndPlayVoice() {
     resetApiKey();
     return;
   }
+  const proxyUrl = getProxyUrl();
   console.log('[ElevenLabs] Key length:', apiKey.length, '| First 8 chars:', apiKey.slice(0,8));
+  console.log('[ElevenLabs] Proxy:', proxyUrl || '(ไม่ได้ตั้งค่า — อาจเกิด CORS)');;
+  if (!proxyUrl) {
+    const go = confirm(
+      'ยังไม่ได้ตั้งค่า Cloudflare Worker Proxy\n' +
+      'อาจเกิด CORS Error จาก GitHub Pages\n\n' +
+      'กด OK เพื่อลองต่อ หรือ Cancel เพื่อไปตั้งค่า Proxy ก่อน'
+    );
+    if (!go) { resetApiKey(); return; }
+  }
   if (!currentLyrics) {
     alert('กรุณา Generate เนื้อเพลงก่อนครับ 🎤');
     return;
@@ -1406,8 +1440,16 @@ async function generateAndPlayVoice() {
         audioBuffers.push({ buf: null, line });
 
       } else if (msg.toLowerCase().includes('cors') || msg.toLowerCase().includes('failed to fetch') || msg.includes('networkerror')) {
-        // CORS / network error — cannot call ElevenLabs directly from this domain
-        alert('CORS Error: Browser บล็อก request ไป ElevenLabs\n\nวิธีแก้: เปิดเว็บด้วย Chrome แล้วลองใหม่\nหรือใช้ Firefox ที่ปิด strict mode ครับ');
+        // CORS error — need Cloudflare Worker proxy
+        alert(
+          '❌ CORS Error — GitHub Pages บล็อก request ไป ElevenLabs\n\n' +
+          'วิธีแก้: ตั้งค่า Cloudflare Worker Proxy\n' +
+          '1. ไปที่ dash.cloudflare.com → Workers → Create Worker\n' +
+          '2. วาง code จากไฟล์ elabs-proxy.js → Deploy\n' +
+          '3. Copy URL ของ Worker (เช่น https://xxx.workers.dev)\n' +
+          '4. กด 🔑 API KEY แล้วใส่ Worker URL ในช่อง Proxy URL\n\n' +
+          'ดูขั้นตอนละเอียดได้ที่ README ครับ'
+        );
         stopVoice(); return;
 
       } else {
