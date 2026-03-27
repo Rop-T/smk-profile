@@ -1394,8 +1394,8 @@ async function generateAndPlayVoice() {
         'Accept':        'audio/mpeg',
       },
       body: JSON.stringify({
-        text:     prompt,   // ElevenLabs Music API uses 'text' not 'prompt'
-        duration: 60,       // seconds (not ms)
+        prompt: prompt,             // Music API requires 'prompt'
+        music_length_seconds: 60,   // 60 seconds
       })
     });
 
