@@ -808,18 +808,12 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
             </div>
             <div class="elabs-controls">
               <div class="voice-select-wrap">
-                <span style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--dim2);text-transform:uppercase;">Voice</span>
-                <select class="voice-select" id="voiceSelect">
-                  <option value="nPczCjzI2devNBz1zQrb">Brian — Multilingual ✓</option>
-                  <option value="N2lVS1w4EtoT3dr4eOWO">Callum — Multilingual ✓</option>
-                  <option value="IKne3meq5aSn9XLyUdCD">Charlie — Multilingual ✓</option>
-                  <option value="XB0fDUnXU5powFXDhCwa">Charlotte — Multilingual ✓</option>
-                  <option value="Zlb1dXrM653N07WRdFW3">Grace — Multilingual ✓</option>
-                  <option value="pFZP5JQG7iQjIQuC4Bku">Lily — Multilingual ✓</option>
-                </select>
+                <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--cyan);opacity:.8;">
+                  🎵 ElevenLabs Music AI — สร้างเพลง Rap ภาษาไทยพร้อมทำนองจริง
+                </span>
               </div>
               <button class="elabs-play-btn" id="elabsPlayBtn" onclick="generateAndPlayVoice()">
-                🎤 สร้างเสียง + เล่น
+                🎵 สร้างเพลง Rap
               </button>
               <button class="elabs-stop-btn" id="elabsStopBtn" onclick="stopVoice()" style="display:none">
                 ■ หยุด
@@ -1125,12 +1119,14 @@ function switchTab(tab) {
 
 // ── Format lyrics for display (colorize section headers) ─
 function formatLyricsHTML(text) {
+  let lineIdx = 0;
   return text.split('\n').map(line => {
     const t = line.trim();
-    if (/^\[(INTRO|VERSE|HOOK|CHORUS|BRIDGE|OUTRO|INTERLUDE)/i.test(t)) {
+    if (!t) return '<br>';
+    if (/^\[.+\]$/.test(t)) {
       return `<span class="lyrics-section-label">${t}</span>`;
     }
-    return t ? `<span>${t}</span>\n` : '<br>';
+    return `<span data-line="${lineIdx++}" class="rp-line">${t}</span>\n`;
   }).join('');
 }
 
@@ -1286,270 +1282,173 @@ Format (ใส่ header ในวงเล็บเหลี่ยม):
   btn.disabled=false; btn.textContent='🎤 GENERATE';
 }
 
+
 // ════════════════════════════════════════════════════════
-// ELEVENLABS VOICE ENGINE
+// ELEVENLABS MUSIC COMPOSE ENGINE
+// POST /v1/music/compose — generates real song with Thai vocals
 // ════════════════════════════════════════════════════════
-let elabsAudioQueue = [];   // Array of AudioBuffer
-let elabsLineTexts  = [];   // Array of display lines
-let elabsPlaying    = false;
-let elabsCtx        = null;
-let elabsSource     = null;
-let elabsWaveTimer  = null;
 let currentLyrics   = '';
+let isRapping       = false;
+let musicAudio      = null;
+const MUSIC_API     = 'https://api.elevenlabs.io/v1/music/compose';
 
-const ELABS_API = 'https://api.elevenlabs.io/v1/text-to-speech';
-const ELABS_MODEL = 'eleven_multilingual_v2';
-
-// ── Init waveform bars ────────────────────────────────────
-function initElabsWave() {
-  const w = document.getElementById('elabsWave');
-  if (!w) return;
-  w.innerHTML = '';
-  const heights = [8,14,22,30,24,18,26,34,26,20,28,22,16,24,18];
-  heights.forEach((h,i) => {
-    const b = document.createElement('div');
-    b.className = 'elabs-wbar';
-    b.id = 'ew' + i;
-    b.style.cssText = `--h:${h}px;--d:${(0.1+Math.random()*0.15).toFixed(2)}s`;
-    w.appendChild(b);
-  });
-}
-function startElabsWave() {
-  for(let i=0;i<15;i++){const b=document.getElementById('ew'+i);if(b)b.classList.add('active');}
-}
-function stopElabsWave() {
-  for(let i=0;i<15;i++){const b=document.getElementById('ew'+i);if(b)b.classList.remove('active');}
-}
-
-// ── Set status message ────────────────────────────────────
-function setElabsStatus(msg, show=true) {
-  const s = document.getElementById('elabsStatus');
-  const t = document.getElementById('elabsStatusText');
-  if(s) s.style.display = show ? 'flex' : 'none';
-  if(t) t.textContent = msg;
-}
-
-// ── Fetch audio for one text chunk from ElevenLabs ────────
-async function fetchElabsAudio(text, voiceId, apiKey) {
-  // eleven_multilingual_v2 auto-detects language from text content
-  // Ensure Thai chars are present — prepend zero-width Thai marker if needed
-  const textHasThai = /[฀-๿]/.test(text);
-  if (!textHasThai) {
-    console.warn('[ElevenLabs] Skipping non-Thai line:', text.slice(0,40));
-    return null;
-  }
-  // ElevenLabs requires both headers for browser-based calls
-  const cleanKey = apiKey.trim();
-  // Use Cloudflare Worker proxy if configured (fixes CORS from GitHub Pages)
-  const proxyBase = getProxyUrl();
-  const endpoint  = proxyBase
-    ? `${proxyBase}/${voiceId}?output_format=mp3_44100_128`
-    : `${ELABS_API}/${voiceId}?output_format=mp3_44100_128`;
-
-  console.log('[ElevenLabs] Endpoint:', endpoint.slice(0, 60));
-  console.log('[ElevenLabs] Text being sent:', text.slice(0, 80));
-  const hasThai = /[\u0E00-\u0E7F]/.test(text);
-  console.log('[ElevenLabs] Contains Thai chars:', hasThai);
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'xi-api-key':    cleanKey,
-      'Authorization': `Bearer ${cleanKey}`,
-      'Content-Type':  'application/json',
-      'Accept':        'audio/mpeg',
-    },
-    body: JSON.stringify({
-      text: text,
-      model_id: ELABS_MODEL,
-      voice_settings: {
-        stability: 0.30,
-        similarity_boost: 0.75,
-        style: 0.50,
-        use_speaker_boost: true,
-      }
-    })
-  });
-
-  if (!res.ok) {
-    let errBody = '';
-    try { errBody = await res.text(); } catch(_) {}
-    console.error(`ElevenLabs HTTP ${res.status}:`, errBody);
-    throw new Error(`HTTP_${res.status}: ${errBody}`);
-  }
-
-  const arrayBuf = await res.arrayBuffer();
-  if (!elabsCtx) elabsCtx = new (window.AudioContext||window.webkitAudioContext)();
-  if (elabsCtx.state === 'suspended') await elabsCtx.resume();
-  return await elabsCtx.decodeAudioData(arrayBuf);
-}
-
-// ── Parse lyrics into lines for TTS ─────────────────────
+// ── Parse & format helpers ────────────────────────────────
 function parseLyricsToLines(text) {
-  return text.split('\n')
-    .map(l => l.trim())
-    .filter(l => {
-      if (!l) return false;
-      if (/^\[.+\]$/.test(l)) return false; // skip [HEADER] lines
-      return l.replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g,'').length > 2;
-    });
+  return text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 }
 
 function cleanLineForTTS(line) {
-  // Keep Thai chars (\u0E00-\u0E7F), English, numbers, basic punctuation
-  // Remove only: emoji, brackets, markdown symbols
   const cleaned = line
     .replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '')
-    .replace(/[\[\]\*\_#]/g, '')
-    .trim();
-  // Safety check: if no Thai chars after cleaning, skip this line
-  const hasThai = /[\u0E00-\u0E7F]/.test(cleaned);
-  console.log('[TTS Line]', hasThai ? 'Thai' : 'NO THAI', '—', cleaned.slice(0,40));
+    .replace(/[\[\]\*\_#]/g, '').trim();
+  const lineHasThai = /[\u0E00-\u0E7F]/.test(cleaned);
+  console.log('[TTS Line]', lineHasThai ? 'Thai' : 'NO THAI', '—', cleaned.slice(0,40));
   return cleaned;
 }
 
-// ── Main: generate all audio then play sequentially ──────
-async function generateAndPlayVoice() {
-  const apiKey  = getElabsKey();
-  const voiceId = (document.getElementById('voiceSelect')||{}).value || 'pNInz6obpgDQGcFmaJgB';
+function formatLyricsHTML(text) {
+  let lineIdx = 0;
+  return text.split('\n').map(line => {
+    const t = line.trim();
+    if (!t) return '<br>';
+    if (/^\[.+\]$/.test(t)) return `<span class="lyrics-section-label">${t}</span>`;
+    return `<span data-line="${lineIdx++}" class="rp-line">${t}</span>\n`;
+  }).join('');
+}
 
-  if (!apiKey || apiKey.length < 10) {
-    alert('ยังไม่ได้ใส่ ElevenLabs API Key\nกรุณากด 🔑 API KEY แล้วใส่ Key ครับ');
-    resetApiKey();
+// ── Waveform UI ───────────────────────────────────────────
+function initElabsWave() {
+  const w = document.getElementById('elabsWave'); if(!w) return;
+  w.innerHTML = '';
+  [8,14,22,30,24,18,26,34,26,20,28,22,16,24,18].forEach((h,i)=>{
+    const b = document.createElement('div');
+    b.className='elabs-wbar'; b.id='ew'+i;
+    b.style.cssText=`--h:${h}px;--d:${(0.1+Math.random()*0.15).toFixed(2)}s`;
+    w.appendChild(b);
+  });
+}
+function startElabsWave(){for(let i=0;i<15;i++){const b=document.getElementById('ew'+i);if(b)b.classList.add('active');}}
+function stopElabsWave(){for(let i=0;i<15;i++){const b=document.getElementById('ew'+i);if(b)b.classList.remove('active');}}
+
+// ── Status helpers ────────────────────────────────────────
+function setElabsStatus(msg, show=true) {
+  const s=document.getElementById('elabsStatus');
+  const t=document.getElementById('elabsStatusText');
+  if(s) s.style.display = show?'flex':'none';
+  if(t) t.textContent = msg;
+}
+
+// ── Build music compose prompt ────────────────────────────
+function buildMusicPrompt(lyrics, keywords) {
+  return `Thai hip-hop rap song, style similar to Thaitanium and Fucking Hero, ` +
+    `boom bap beat, heavy kick drum, crisp snare, deep bass line, ` +
+    `confident Thai rap vocals, energetic flow, proud working class anthem. ` +
+    `Keywords: ${keywords}. Lyrics in Thai language:\n\n${lyrics}`;
+}
+
+// ── Generate music via ElevenLabs /v1/music/compose ──────
+async function generateAndPlayVoice() {
+  const elabsKey = getElabsKey();
+  if (!elabsKey || elabsKey.length < 10) {
+    alert('กรุณาใส่ ElevenLabs API Key ก่อนครับ\nกด 🔑 API KEY มุมบนขวา');
     return;
-  }
-  const proxyUrl = getProxyUrl();
-  console.log('[ElevenLabs] Key length:', apiKey.length, '| First 8 chars:', apiKey.slice(0,8));
-  console.log('[ElevenLabs] Proxy:', proxyUrl || '(ไม่ได้ตั้งค่า — อาจเกิด CORS)');;
-  if (!proxyUrl) {
-    const go = confirm(
-      'ยังไม่ได้ตั้งค่า Cloudflare Worker Proxy\n' +
-      'อาจเกิด CORS Error จาก GitHub Pages\n\n' +
-      'กด OK เพื่อลองต่อ หรือ Cancel เพื่อไปตั้งค่า Proxy ก่อน'
-    );
-    if (!go) { resetApiKey(); return; }
   }
   if (!currentLyrics) {
-    alert('กรุณา Generate เนื้อเพลงก่อนครับ 🎤');
-    return;
+    alert('กรุณา Generate เนื้อเพลงก่อนครับ 🎤'); return;
   }
 
-  // Stop any playing
   stopVoice();
-  elabsPlaying = true;
+  isRapping = true;
 
   const playBtn = document.getElementById('elabsPlayBtn');
   const stopBtn = document.getElementById('elabsStopBtn');
-  if(playBtn) { playBtn.disabled = true; playBtn.textContent = '⏳ กำลังสร้างเสียง...'; }
-  if(stopBtn) stopBtn.style.display = '';
+  if(playBtn){ playBtn.disabled=true; playBtn.textContent='⏳ กำลังสร้างเพลง...'; }
+  if(stopBtn) stopBtn.style.display='';
 
+  setElabsStatus('กำลังสร้างเพลง Rap ภาษาไทย รอประมาณ 30-60 วิครับ...', true);
   initElabsWave();
-  const lines = parseLyricsToLines(currentLyrics);
 
-  // Generate audio for all lines
-  const audioBuffers = [];
-  let generated = 0;
+  // Build prompt
+  const kwEl = document.getElementById('rapKw');
+  const kw   = kwEl ? kwEl.value.trim() : '';
+  const prompt = buildMusicPrompt(currentLyrics, kw);
+  console.log('[Music] Prompt:', prompt.slice(0,120));
 
-  for (const line of lines) {
-    if (!elabsPlaying) break;
-    setElabsStatus(`กำลังสร้างเสียง ${++generated}/${lines.length} — "${line.slice(0,20)}..."`, true);
-    try {
-      const cleaned = cleanLineForTTS(line);
-      if (!cleaned || !/[฀-๿]/.test(cleaned)) {
-        console.log('[Skip] No Thai chars in line:', cleaned.slice(0,40));
-        continue;
-      }
-      const buf = await fetchElabsAudio(cleaned, voiceId, apiKey);
-      if (!buf) continue;
-      if (buf) audioBuffers.push({ buf, line });
-    } catch(e) {
-      console.error('ElevenLabs error:', e.message);
-      const msg = e.message || '';
+  // Use Cloudflare proxy if set, else direct
+  const proxyBase = getProxyUrl();
+  // Music endpoint goes through proxy differently — use direct if no proxy
+  const endpoint  = proxyBase
+    ? `${proxyBase}/music-compose`
+    : MUSIC_API;
 
-      if (msg.includes('HTTP_401') || msg.includes('HTTP_403')) {
-        // Genuine auth error
-        alert('ElevenLabs API Key ไม่ถูกต้อง (401/403)\nกรุณาตรวจสอบ Key ที่ elevenlabs.io/app/settings/api-keys');
-        resetApiKey();
-        stopVoice(); return;
+  try {
+    const res = await fetch(endpoint === MUSIC_API ? MUSIC_API : endpoint, {
+      method: 'POST',
+      headers: {
+        'xi-api-key':    elabsKey,
+        'Authorization': `Bearer ${elabsKey}`,
+        'Content-Type':  'application/json',
+        'Accept':        'audio/mpeg',
+      },
+      body: JSON.stringify({
+        prompt:          prompt,
+        music_length_ms: 60000,   // 60 seconds
+      })
+    });
 
-      } else if (msg.includes('HTTP_422')) {
-        // Unprocessable — text too short or invalid, skip silently
-        console.warn('Skip line (422):', line);
-        audioBuffers.push({ buf: null, line });
-
-      } else if (msg.toLowerCase().includes('cors') || msg.toLowerCase().includes('failed to fetch') || msg.includes('networkerror')) {
-        // CORS error — need Cloudflare Worker proxy
-        alert(
-          '❌ CORS Error — GitHub Pages บล็อก request ไป ElevenLabs\n\n' +
-          'วิธีแก้: ตั้งค่า Cloudflare Worker Proxy\n' +
-          '1. ไปที่ dash.cloudflare.com → Workers → Create Worker\n' +
-          '2. วาง code จากไฟล์ elabs-proxy.js → Deploy\n' +
-          '3. Copy URL ของ Worker (เช่น https://xxx.workers.dev)\n' +
-          '4. กด 🔑 API KEY แล้วใส่ Worker URL ในช่อง Proxy URL\n\n' +
-          'ดูขั้นตอนละเอียดได้ที่ README ครับ'
-        );
-        stopVoice(); return;
-
-      } else {
-        // Unknown error — skip line, keep going
-        console.warn('Unknown ElevenLabs error, skipping line:', msg);
-        audioBuffers.push({ buf: null, line });
-      }
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Music API error:', res.status, errText);
+      throw new Error(`HTTP_${res.status}: ${errText}`);
     }
+
+    setElabsStatus('เพลงพร้อมแล้ว กำลังเล่น...', true);
+
+    const audioBlob = await res.blob();
+    const audioUrl  = URL.createObjectURL(audioBlob);
+
+    musicAudio = new Audio(audioUrl);
+    musicAudio.onplay   = () => { startBeat(); startElabsWave(); };
+    musicAudio.onended  = () => { stopVoice(); };
+    musicAudio.onerror  = () => {
+      setElabsStatus('เกิดข้อผิดพลาดในการเล่นเสียง', true);
+      stopVoice();
+    };
+
+    setElabsStatus('', false);
+    await musicAudio.play();
+
+  } catch(e) {
+    console.error('Music compose error:', e.message);
+    setElabsStatus('', false);
+
+    if (e.message.includes('HTTP_401') || e.message.includes('HTTP_403')) {
+      alert('ElevenLabs API Key ไม่ถูกต้อง\nกรุณาตรวจสอบ Key ที่ elevenlabs.io');
+      resetApiKey();
+    } else if (e.message.includes('HTTP_422')) {
+      alert('Prompt ไม่ถูกต้อง กรุณาลอง Generate เนื้อเพลงใหม่ก่อน');
+    } else if (e.message.includes('HTTP_4') || e.message.includes('failed to fetch')) {
+      // CORS or other — fallback to Suno tab
+      alert(
+        'ไม่สามารถเรียก Music API ได้โดยตรง\n\n' +
+        'กรุณากด Tab "🚀 Suno Prompt" แล้ว Copy Prompt\n' +
+        'ไปวางที่ suno.com เพื่อสร้างเพลงได้เลยครับ'
+      );
+    } else {
+      alert('เกิดข้อผิดพลาด: ' + e.message.slice(0,100));
+    }
+    stopVoice();
   }
-
-  if (!elabsPlaying) { cleanupElabs(); return; }
-
-  setElabsStatus('', false);
-  startBeat();  // Start drum beat
-  startElabsWave();
-
-  if(playBtn) { playBtn.disabled = false; playBtn.textContent = '🎤 สร้างเสียงใหม่'; }
-
-  // Play all buffers sequentially
-  const indicator = document.getElementById('elabsLineIndicator');
-  if(indicator) indicator.classList.add('on');
-
-  for (const { buf, line } of audioBuffers) {
-    if (!elabsPlaying) break;
-
-    // Show current line
-    if(indicator) indicator.textContent = `♪ ${line}`;
-
-    if (!buf) { await sleep(300); continue; }
-
-    // Play this buffer
-    await playBuffer(buf);
-
-    // Small gap between lines (feel of rapper breathing)
-    await sleep(180);
-  }
-
-  stopVoice();
 }
 
-// ── Play one AudioBuffer and await completion ─────────────
-function playBuffer(buf) {
-  return new Promise(resolve => {
-    if (!elabsCtx) elabsCtx = new (window.AudioContext||window.webkitAudioContext)();
-    if (elabsCtx.state === 'suspended') elabsCtx.resume();
-    const source = elabsCtx.createBufferSource();
-    source.buffer = buf;
-    // Add slight pitch variation — more human feel
-    source.playbackRate.value = 0.96 + Math.random()*0.05; // 0.96–1.01
-    source.connect(elabsCtx.destination);
-    source.onended = resolve;
-    source.start();
-    elabsSource = source;
-  });
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ── Stop everything ───────────────────────────────────────
+// ── Stop music ────────────────────────────────────────────
 function stopVoice() {
-  elabsPlaying = false;
-  if(elabsSource) { try{elabsSource.stop();}catch(e){} elabsSource=null; }
+  isRapping = false;
+  if (musicAudio) {
+    musicAudio.pause();
+    musicAudio.currentTime = 0;
+    musicAudio = null;
+  }
   stopBeat();
   stopElabsWave();
   setElabsStatus('', false);
@@ -1559,10 +1458,9 @@ function stopVoice() {
 function cleanupElabs() {
   const playBtn = document.getElementById('elabsPlayBtn');
   const stopBtn = document.getElementById('elabsStopBtn');
-  const indicator = document.getElementById('elabsLineIndicator');
-  if(playBtn) { playBtn.disabled = false; playBtn.textContent = '🎤 สร้างเสียง + เล่น'; }
-  if(stopBtn) stopBtn.style.display = 'none';
-  if(indicator) { indicator.classList.remove('on'); indicator.textContent = ''; }
+  if(playBtn){ playBtn.disabled=false; playBtn.textContent='🎵 สร้างเพลง Rap'; }
+  if(stopBtn) stopBtn.style.display='none';
 }
+
 
 </script></body></html>
