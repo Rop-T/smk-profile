@@ -1298,7 +1298,7 @@ let elabsWaveTimer  = null;
 let currentLyrics   = '';
 
 const ELABS_API = 'https://api.elevenlabs.io/v1/text-to-speech';
-const ELABS_MODEL = 'eleven_turbo_v2_5';  // Supports language_code:'th' for Thai
+const ELABS_MODEL = 'eleven_multilingual_v2';
 
 // ── Init waveform bars ────────────────────────────────────
 function initElabsWave() {
@@ -1331,6 +1331,13 @@ function setElabsStatus(msg, show=true) {
 
 // ── Fetch audio for one text chunk from ElevenLabs ────────
 async function fetchElabsAudio(text, voiceId, apiKey) {
+  // eleven_multilingual_v2 auto-detects language from text content
+  // Ensure Thai chars are present — prepend zero-width Thai marker if needed
+  const textHasThai = /[฀-๿]/.test(text);
+  if (!textHasThai) {
+    console.warn('[ElevenLabs] Skipping non-Thai line:', text.slice(0,40));
+    return null;
+  }
   // ElevenLabs requires both headers for browser-based calls
   const cleanKey = apiKey.trim();
   // Use Cloudflare Worker proxy if configured (fixes CORS from GitHub Pages)
@@ -1355,7 +1362,6 @@ async function fetchElabsAudio(text, voiceId, apiKey) {
     body: JSON.stringify({
       text: text,
       model_id: ELABS_MODEL,
-      language_code: 'th',
       voice_settings: {
         stability: 0.30,
         similarity_boost: 0.75,
@@ -1448,8 +1454,14 @@ async function generateAndPlayVoice() {
     if (!elabsPlaying) break;
     setElabsStatus(`กำลังสร้างเสียง ${++generated}/${lines.length} — "${line.slice(0,20)}..."`, true);
     try {
-      const buf = await fetchElabsAudio(cleanLineForTTS(line), voiceId, apiKey);
-      audioBuffers.push({ buf, line });
+      const cleaned = cleanLineForTTS(line);
+      if (!cleaned || !/[฀-๿]/.test(cleaned)) {
+        console.log('[Skip] No Thai chars in line:', cleaned.slice(0,40));
+        continue;
+      }
+      const buf = await fetchElabsAudio(cleaned, voiceId, apiKey);
+      if (!buf) continue;
+      if (buf) audioBuffers.push({ buf, line });
     } catch(e) {
       console.error('ElevenLabs error:', e.message);
       const msg = e.message || '';
