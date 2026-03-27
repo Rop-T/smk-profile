@@ -957,7 +957,8 @@ function getApiKey() {
 }
 
 function getElabsKey() {
-  return localStorage.getItem('smk_elabs_key')||'';
+  const k = localStorage.getItem('smk_elabs_key') || '';
+  return k.trim().replace(/[\r\n\t]/g, '');  // strip any accidental whitespace/newlines
 }
 
 // Auto-hide modal if Anthropic key exists
@@ -1311,10 +1312,13 @@ function setElabsStatus(msg, show=true) {
 
 // ── Fetch audio for one text chunk from ElevenLabs ────────
 async function fetchElabsAudio(text, voiceId, apiKey) {
-  const res = await fetch(`${ELABS_API}/${voiceId}`, {
+  // ElevenLabs requires both headers for browser-based calls
+  const cleanKey = apiKey.trim();
+  const res = await fetch(`${ELABS_API}/${voiceId}?output_format=mp3_44100_128`, {
     method: 'POST',
     headers: {
-      'xi-api-key': apiKey,
+      'xi-api-key': cleanKey,
+      'Authorization': `Bearer ${cleanKey}`,
       'Content-Type': 'application/json',
       'Accept': 'audio/mpeg',
     },
@@ -1322,19 +1326,24 @@ async function fetchElabsAudio(text, voiceId, apiKey) {
       text: text,
       model_id: ELABS_MODEL,
       voice_settings: {
-        stability: 0.35,          // Lower = more expressive/emotional
+        stability: 0.35,
         similarity_boost: 0.75,
-        style: 0.45,              // Style exaggeration — more dynamic
+        style: 0.45,
         use_speaker_boost: true,
       }
     })
   });
+
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`ElevenLabs error ${res.status}: ${err}`);
+    let errBody = '';
+    try { errBody = await res.text(); } catch(_) {}
+    console.error(`ElevenLabs HTTP ${res.status}:`, errBody);
+    throw new Error(`HTTP_${res.status}: ${errBody}`);
   }
+
   const arrayBuf = await res.arrayBuffer();
   if (!elabsCtx) elabsCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if (elabsCtx.state === 'suspended') await elabsCtx.resume();
   return await elabsCtx.decodeAudioData(arrayBuf);
 }
 
@@ -1349,10 +1358,11 @@ async function generateAndPlayVoice() {
   const voiceId = (document.getElementById('voiceSelect')||{}).value || 'pNInz6obpgDQGcFmaJgB';
 
   if (!apiKey || apiKey.length < 10) {
-    // No key — open settings
+    alert('ยังไม่ได้ใส่ ElevenLabs API Key\nกรุณากด 🔑 API KEY แล้วใส่ Key ครับ');
     resetApiKey();
     return;
   }
+  console.log('[ElevenLabs] Key length:', apiKey.length, '| First 8 chars:', apiKey.slice(0,8));
   if (!currentLyrics) {
     alert('กรุณา Generate เนื้อเพลงก่อนครับ 🎤');
     return;
@@ -1381,14 +1391,30 @@ async function generateAndPlayVoice() {
       const buf = await fetchElabsAudio(line, voiceId, apiKey);
       audioBuffers.push({ buf, line });
     } catch(e) {
-      console.error('ElevenLabs error:', e);
-      if (e.message.includes('401')) {
-        alert('ElevenLabs API Key ไม่ถูกต้อง กรุณาตรวจสอบและใส่ใหม่ครับ');
+      console.error('ElevenLabs error:', e.message);
+      const msg = e.message || '';
+
+      if (msg.includes('HTTP_401') || msg.includes('HTTP_403')) {
+        // Genuine auth error
+        alert('ElevenLabs API Key ไม่ถูกต้อง (401/403)\nกรุณาตรวจสอบ Key ที่ elevenlabs.io/app/settings/api-keys');
         resetApiKey();
         stopVoice(); return;
+
+      } else if (msg.includes('HTTP_422')) {
+        // Unprocessable — text too short or invalid, skip silently
+        console.warn('Skip line (422):', line);
+        audioBuffers.push({ buf: null, line });
+
+      } else if (msg.toLowerCase().includes('cors') || msg.toLowerCase().includes('failed to fetch') || msg.includes('networkerror')) {
+        // CORS / network error — cannot call ElevenLabs directly from this domain
+        alert('CORS Error: Browser บล็อก request ไป ElevenLabs\n\nวิธีแก้: เปิดเว็บด้วย Chrome แล้วลองใหม่\nหรือใช้ Firefox ที่ปิด strict mode ครับ');
+        stopVoice(); return;
+
+      } else {
+        // Unknown error — skip line, keep going
+        console.warn('Unknown ElevenLabs error, skipping line:', msg);
+        audioBuffers.push({ buf: null, line });
       }
-      // Skip failed line
-      audioBuffers.push({ buf: null, line });
     }
   }
 
