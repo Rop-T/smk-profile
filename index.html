@@ -260,6 +260,210 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
   #cb-win{width:calc(100vw - 32px);right:16px;bottom:80px;}
 }
 
+
+
+/* ── ELEVENLABS PLAYER ── */
+.elabs-player {
+  margin-top: 16px; border-top: 1px solid var(--line);
+  padding-top: 16px; display:none;
+}
+.elabs-player.on { display:block; }
+.elabs-status {
+  font-family:var(--mono); font-size:10px; letter-spacing:.15em;
+  color:var(--cyan); text-transform:uppercase;
+  display:flex; align-items:center; gap:10px; margin-bottom:14px;
+}
+.elabs-spinner {
+  width:12px; height:12px; border:2px solid rgba(0,200,255,.2);
+  border-top-color:var(--cyan); border-radius:50%;
+  animation:spin .8s linear infinite; flex-shrink:0;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.elabs-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.elabs-play-btn {
+  background:var(--cyan); border:none; color:#04060d;
+  font-family:var(--ui); font-weight:800; font-size:12px;
+  letter-spacing:.1em; text-transform:uppercase;
+  padding:11px 24px; cursor:pointer; transition:background .2s;
+  display:flex; align-items:center; gap:8px;
+}
+.elabs-play-btn:hover { background:#1adaff; }
+.elabs-play-btn:disabled { opacity:.5; cursor:not-allowed; }
+.elabs-stop-btn {
+  background:rgba(255,60,80,.1); border:1px solid rgba(255,60,80,.3);
+  color:#ff4466; font-family:var(--ui); font-weight:700;
+  font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  padding:11px 20px; cursor:pointer; transition:all .2s;
+}
+.elabs-stop-btn:hover { background:rgba(255,60,80,.2); }
+.elabs-waveform {
+  display:flex; align-items:center; gap:2px; height:32px;
+  padding:0 4px;
+}
+.elabs-wbar {
+  width:3px; background:var(--cyan); border-radius:1px;
+  opacity:.3; height:4px; transition:height .08s;
+}
+.elabs-wbar.active {
+  opacity:.9;
+  animation:ewb var(--d,.2s) ease-in-out infinite alternate;
+}
+@keyframes ewb { from{height:4px} to{height:var(--h,28px)} }
+.elabs-line-indicator {
+  font-family:var(--thai); font-size:13px; color:var(--dim);
+  padding:8px 12px; background:rgba(0,200,255,.05);
+  border-left:2px solid var(--cyan); margin-top:12px;
+  min-height:36px; line-height:1.5; display:none;
+}
+.elabs-line-indicator.on { display:block; }
+.voice-select-wrap {
+  display:flex; align-items:center; gap:8px;
+}
+.voice-select {
+  background:rgba(0,200,255,.05); border:1px solid rgba(0,200,255,.2);
+  color:var(--white); font-family:var(--mono); font-size:10px;
+  padding:6px 10px; outline:none; cursor:pointer;
+  letter-spacing:.05em;
+}
+.voice-select option { background:#07091a; }
+.elabs-no-key {
+  font-family:var(--thai); font-size:13px; color:var(--dim2);
+  padding:12px; border:1px solid var(--line); text-align:center;
+}
+.elabs-no-key a { color:var(--cyan); cursor:pointer; }
+
+/* ── SUNO WORKFLOW UI ── */
+.rap-result-wrap { display:none; }
+.rap-result-wrap.on { display:block; }
+
+/* Tab switcher */
+.rap-tabs { display:flex; gap:0; border-bottom:1px solid var(--line); margin-bottom:0; }
+.rap-tab {
+  font-family:var(--mono); font-size:10px; letter-spacing:.15em;
+  text-transform:uppercase; padding:12px 24px; cursor:pointer;
+  color:var(--dim); border-bottom:2px solid transparent;
+  background:none; border-top:none; border-left:none; border-right:none;
+  transition:all .2s; margin-bottom:-1px;
+}
+.rap-tab.active { color:var(--cyan); border-bottom-color:var(--cyan); }
+.rap-tab-pane { display:none; }
+.rap-tab-pane.active { display:block; }
+
+/* Lyrics card */
+.lyrics-card {
+  background:var(--bg1); border:1px solid var(--line);
+  border-top:none; padding:32px 28px;
+}
+.lyrics-text {
+  font-family:var(--ui); font-size:14px; line-height:2;
+  color:var(--white); white-space:pre-wrap; max-height:400px;
+  overflow-y:auto; scrollbar-width:thin;
+  scrollbar-color:rgba(0,200,255,.15) transparent;
+}
+.lyrics-section-label {
+  font-family:var(--mono); font-size:9px; letter-spacing:.2em;
+  color:var(--cyan); opacity:.6; text-transform:uppercase;
+  display:block; margin-top:12px; margin-bottom:4px;
+}
+
+/* Suno prompt card */
+.suno-card {
+  background:var(--bg1); border:1px solid var(--line);
+  border-top:none; padding:28px;
+}
+.suno-prompt-box {
+  background:rgba(0,0,0,.3); border:1px solid rgba(0,200,255,.12);
+  padding:20px; font-family:var(--mono); font-size:12px;
+  line-height:1.8; color:var(--dim); white-space:pre-wrap;
+  max-height:340px; overflow-y:auto; letter-spacing:.02em;
+  scrollbar-width:thin; scrollbar-color:rgba(0,200,255,.15) transparent;
+}
+.suno-actions {
+  display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;
+  align-items:center;
+}
+.suno-copy-btn {
+  background:var(--cyan); border:none; color:#04060d;
+  font-family:var(--ui); font-weight:800; font-size:12px;
+  letter-spacing:.1em; text-transform:uppercase;
+  padding:13px 24px; cursor:pointer; transition:all .2s;
+  display:flex; align-items:center; gap:8px;
+}
+.suno-copy-btn:hover { background:#1adaff; }
+.suno-copy-btn.copied { background:#4ade80; }
+.suno-open-btn {
+  background:transparent; border:1px solid rgba(0,200,255,.35);
+  color:var(--cyan); font-family:var(--ui); font-weight:700;
+  font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  padding:13px 24px; cursor:pointer; transition:all .2s;
+  text-decoration:none; display:flex; align-items:center; gap:8px;
+}
+.suno-open-btn:hover { background:rgba(0,200,255,.08); }
+.suno-guide {
+  margin-top:20px; background:rgba(0,200,255,.04);
+  border:1px solid rgba(0,200,255,.1); padding:18px 20px;
+}
+.suno-guide-title {
+  font-family:var(--mono); font-size:9px; letter-spacing:.2em;
+  color:var(--cyan); text-transform:uppercase; margin-bottom:10px;
+}
+.suno-steps { list-style:none; counter-reset:step-counter; }
+.suno-steps li {
+  counter-increment:step-counter; padding:5px 0 5px 28px;
+  position:relative; font-family:var(--thai); font-size:13px;
+  color:var(--dim); line-height:1.6;
+}
+.suno-steps li::before {
+  content:counter(step-counter);
+  position:absolute; left:0; top:5px;
+  width:18px; height:18px; border-radius:50%;
+  background:rgba(0,200,255,.15); border:1px solid rgba(0,200,255,.3);
+  font-family:var(--mono); font-size:9px; color:var(--cyan);
+  display:flex; align-items:center; justify-content:center;
+  line-height:1;
+}
+.suno-steps li strong { color:var(--white); font-weight:600; }
+.suno-steps li a { color:var(--cyan); text-decoration:none; }
+
+/* Beat player (simplified — backup option) */
+.beat-only-bar {
+  display:flex; align-items:center; gap:16px;
+  padding:16px 0; border-top:1px solid var(--line); margin-top:16px;
+  flex-wrap:wrap;
+}
+.beat-only-label {
+  font-family:var(--mono); font-size:9px; letter-spacing:.15em;
+  color:var(--dim2); text-transform:uppercase; white-space:nowrap;
+}
+.beat-bpm-wrap { display:flex; align-items:center; gap:8px; }
+.beat-bpm-range {
+  -webkit-appearance:none; appearance:none;
+  width:80px; height:2px; background:rgba(0,200,255,.2);
+  outline:none; cursor:pointer;
+}
+.beat-bpm-range::-webkit-slider-thumb {
+  -webkit-appearance:none; width:10px; height:10px;
+  background:var(--cyan); border-radius:50%; cursor:pointer;
+}
+.beat-bpm-val {
+  font-family:var(--mono); font-size:11px;
+  color:var(--cyan); min-width:28px;
+}
+.beat-play-btn {
+  background:rgba(0,200,255,.1); border:1px solid rgba(0,200,255,.25);
+  color:var(--cyan); font-family:var(--mono); font-size:10px;
+  letter-spacing:.1em; text-transform:uppercase;
+  padding:8px 16px; cursor:pointer; transition:all .2s;
+}
+.beat-play-btn:hover { background:rgba(0,200,255,.2); }
+.beat-viz { display:flex; align-items:flex-end; gap:2px; height:24px; }
+.bvbar {
+  width:3px; background:var(--cyan); border-radius:1px;
+  opacity:.4; height:3px;
+}
+.bvbar.on { animation:bvb var(--d,.25s) ease-in-out infinite alternate; opacity:.8; }
+@keyframes bvb { from{height:3px} to{height:var(--h,20px)} }
+
 /* ── API KEY MODAL ── */
 #api-modal {
   position:fixed; inset:0; z-index:9999;
@@ -379,15 +583,24 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
 <div id="api-modal">
   <div class="api-box">
     <div class="api-box-logo">SAMAKEE <em>99</em> &mdash; Company Profile</div>
-    <div class="api-box-label">Anthropic API Key</div>
+
+    <div class="api-box-label">Anthropic API Key <span style="opacity:.5">(สำหรับ น้องอับดุล AI)</span></div>
     <input class="api-box-input" id="apiKeyInput" type="password"
-      placeholder="sk-ant-api03-..." 
+      placeholder="sk-ant-api03-..."
+      onkeydown="if(event.key==='Enter') document.getElementById('elabsInput').focus()" />
+
+    <div style="margin-top:16px"></div>
+    <div class="api-box-label">ElevenLabs API Key <span style="opacity:.5">(สำหรับ เสียง Rap)</span></div>
+    <input class="api-box-input" id="elabsInput" type="password"
+      placeholder="sk_... หรือ xl_..."
       onkeydown="if(event.key==='Enter') saveApiKey()" />
+
     <div class="api-box-err" id="apiErr"></div>
-    <button class="api-box-btn" onclick="saveApiKey()">เข้าสู่ระบบ →</button>
+    <button class="api-box-btn" onclick="saveApiKey()" style="margin-top:16px">เข้าสู่ระบบ →</button>
     <div class="api-box-note">
-      API Key จะถูกเก็บไว้ใน Browser ของคุณเท่านั้น ไม่มีการส่งข้อมูลไปยังเซิร์ฟเวอร์ใดๆ<br>
-      สร้าง Key ใหม่ได้ที่ <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--cyan)">console.anthropic.com → API Keys</a>
+      Keys จะถูกเก็บไว้ใน Browser เท่านั้น ไม่มีการส่งออก<br>
+      Anthropic: <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--cyan)">console.anthropic.com</a> &nbsp;|&nbsp;
+      ElevenLabs: <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" style="color:var(--cyan)">elevenlabs.io</a>
     </div>
   </div>
 </div>
@@ -558,38 +771,92 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
 <div class="divider"></div>
 <section id="rap">
   <div class="sec-inner" style="max-width:1200px;margin:0 auto;padding:0 80px;">
-    <div class="eyebrow anim"><span>06</span> AI — Powered by Claude</div>
+    <div class="eyebrow anim"><span>06</span> AI — Powered by Claude × Suno</div>
     <h2 class="sec-title anim">SMK RAP<br><em>GENERATOR</em></h2>
-    <p style="font-family:var(--thai);font-size:14px;color:var(--dim);max-width:500px;line-height:1.8;margin-top:14px" class="anim">
-      ใส่ Keyword → น้องอับดุลแต่งเพลง + สร้าง <strong style="color:var(--cyan)">Beat &amp; ทำนอง</strong> ให้ฟังสดๆ พร้อมโยกได้เลยครับ 🎵
+    <p style="font-family:var(--thai);font-size:14px;color:var(--dim);max-width:560px;line-height:1.8;margin-top:14px" class="anim">
+      น้องอับดุลจะแต่งเนื้อเพลง Rap สไตล์ <strong style="color:var(--white)">Fucking Hero × Thaitanium</strong>
+      พร้อม Suno Prompt สำเร็จรูป — นำไปวางใน <strong style="color:var(--cyan)">Suno.com</strong> แล้วได้เพลงจริงทันทีครับ 🎵
     </p>
     <div class="rap-kw-wrap anim">
-      <input class="rap-kw" id="rapKw" placeholder="Keyword: เหล็ก, ยามาฮ่า, คุณภาพ, ไทยแลนด์, IATF ..."/>
+      <input class="rap-kw" id="rapKw" placeholder="Keyword เช่น: เหล็ก, ยามาฮ่า, คุณภาพ, กรุงเทพฯ, IATF ..."/>
       <button class="rap-go" id="rapGo" onclick="doRap()">🎤 GENERATE</button>
     </div>
-    <div class="rap-out" id="rapOut"></div>
 
-    <!-- PLAYER -->
-    <div class="rap-player" id="rapPlayer">
-      <div class="rp-top">
-        <div class="rp-title">🎵 น้องอับดุล RAP PLAYER — BEAT ENGINE ACTIVE</div>
-        <div class="rp-controls">
-          <div class="rp-bpm-wrap">
-            <span class="rp-bpm-label">BPM</span>
-            <input class="rp-bpm-range" id="bpmRange" type="range" min="70" max="120" value="88"
-              oninput="document.getElementById('bpmVal').textContent=this.value; setBPM(+this.value)"/>
-            <span class="rp-bpm-val" id="bpmVal">88</span>
+    <!-- Result area -->
+    <div class="rap-result-wrap" id="rapResultWrap">
+      <div class="rap-tabs">
+        <button class="rap-tab active" id="tabBtnLyrics" onclick="switchTab('lyrics')">🎤 เนื้อเพลง</button>
+        <button class="rap-tab" id="tabBtnSuno" onclick="switchTab('suno')">🚀 Suno Prompt</button>
+      </div>
+
+      <!-- Tab: Lyrics -->
+      <div class="rap-tab-pane active" id="tabLyrics">
+        <div class="lyrics-card">
+          <div class="lyrics-text" id="rapLyricsDisplay"></div>
+          <!-- ElevenLabs Voice Player -->
+          <div class="elabs-player" id="elabsPlayer">
+            <div class="elabs-status" id="elabsStatus" style="display:none">
+              <div class="elabs-spinner"></div>
+              <span id="elabsStatusText">กำลังสร้างเสียง...</span>
+            </div>
+            <div class="elabs-controls">
+              <div class="voice-select-wrap">
+                <span style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--dim2);text-transform:uppercase;">Voice</span>
+                <select class="voice-select" id="voiceSelect">
+                  <option value="pNInz6obpgDQGcFmaJgB">Adam (Energetic)</option>
+                  <option value="TxGEqnHWrfWFTfGW9XjX">Josh (Deep)</option>
+                  <option value="VR6AewLTigWG4xSOukaG">Arnold (Strong)</option>
+                  <option value="ErXwobaYiN019PkySvjV">Antoni (Smooth)</option>
+                  <option value="yoZ06aMxZJJ28mfd3POQ">Sam (Confident)</option>
+                </select>
+              </div>
+              <button class="elabs-play-btn" id="elabsPlayBtn" onclick="generateAndPlayVoice()">
+                🎤 สร้างเสียง + เล่น
+              </button>
+              <button class="elabs-stop-btn" id="elabsStopBtn" onclick="stopVoice()" style="display:none">
+                ■ หยุด
+              </button>
+              <div class="elabs-waveform" id="elabsWave"></div>
+            </div>
+            <div class="elabs-line-indicator" id="elabsLineIndicator"></div>
           </div>
-          <button class="rp-btn" id="playBtn" onclick="startRap()">▶ เล่นเพลง</button>
-          <button class="rp-btn stop" id="stopBtn" onclick="stopRap()" style="display:none">■ หยุด</button>
+
+          <!-- Beat preview bar -->
+          <div class="beat-only-bar">
+            <span class="beat-only-label">🥁 Beat</span>
+            <div class="beat-viz" id="beatVizMini"></div>
+            <div class="beat-bpm-wrap">
+              <span class="beat-only-label">BPM</span>
+              <input class="beat-bpm-range" id="bpmMini" type="range" min="70" max="120" value="88"
+                oninput="document.getElementById('bpmMiniVal').textContent=this.value;setBPM(+this.value)"/>
+              <span class="beat-bpm-val" id="bpmMiniVal">88</span>
+            </div>
+            <button class="beat-play-btn" id="beatPlayBtn" onclick="toggleBeat()">▶ Beat Only</button>
+          </div>
         </div>
       </div>
-      <!-- Beat visualizer bars -->
-      <div class="rp-viz" id="rpViz"></div>
-      <!-- 16-step beat grid -->
-      <div class="rp-beat-row" id="rpBeatRow"></div>
-      <!-- Lyrics display with line highlighting -->
-      <div class="rp-lyrics" id="rpLyrics"></div>
+
+      <!-- Tab: Suno Prompt -->
+      <div class="rap-tab-pane" id="tabSuno">
+        <div class="suno-card">
+          <div class="suno-prompt-box" id="sunoPromptBox"></div>
+          <div class="suno-actions">
+            <button class="suno-copy-btn" id="sunoCopyBtn" onclick="copySunoPrompt()">📋 Copy Prompt</button>
+            <a class="suno-open-btn" href="https://suno.com/create" target="_blank" rel="noopener">🚀 เปิด Suno.com</a>
+            <span style="font-family:var(--mono);font-size:9px;color:var(--dim2);letter-spacing:.08em">Copy → วางใน Suno → กด Create</span>
+          </div>
+          <div class="suno-guide">
+            <div class="suno-guide-title">วิธีสร้างเพลงด้วย Suno AI</div>
+            <ol class="suno-steps">
+              <li>กด <strong>Copy Prompt</strong> ด้านบน เพื่อคัดลอก Prompt ทั้งหมด</li>
+              <li>กด <strong>เปิด Suno.com</strong> → Login ฟรี (25 เพลง/วัน)</li>
+              <li>กด <strong>"Create"</strong> → วาง Prompt ในช่อง <strong>"Song Description"</strong></li>
+              <li>กด <strong>"Create"</strong> → รอ ~30 วินาที → ได้เพลง Rap จริงพร้อมทำนอง!</li>
+              <li>ฟัง → เลือก Version ที่ชอบ → <strong>Download หรือ Share</strong> ได้เลย</li>
+            </ol>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -647,6 +914,81 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
   </div>
 </div>
 <script>
+// ── API KEY MANAGEMENT ────────────────────────────────────
+function saveApiKey() {
+  const anthropicKey = (document.getElementById('apiKeyInput')||{}).value||'';
+  const elabsKey     = (document.getElementById('elabsInput')||{}).value||'';
+  const err          = document.getElementById('apiErr');
+  if (!anthropicKey.trim() || anthropicKey.trim().length < 10) {
+    if(err){err.textContent='⚠ กรุณากรอก Anthropic API Key ให้ครบถ้วน';err.style.display='block';}
+    return;
+  }
+  if(err) err.style.display='none';
+  localStorage.setItem('smk_api_key', anthropicKey.trim());
+  if (elabsKey.trim().length > 10) {
+    localStorage.setItem('smk_elabs_key', elabsKey.trim());
+  }
+  const m = document.getElementById('api-modal');
+  if(m) m.classList.add('hidden');
+}
+
+function resetApiKey() {
+  localStorage.removeItem('smk_api_key');
+  localStorage.removeItem('smk_elabs_key');
+  const m = document.getElementById('api-modal');
+  if(m) m.classList.remove('hidden');
+  ['apiKeyInput','elabsInput'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.value='';el.placeholder=el.id==='apiKeyInput'?'sk-ant-api03-...':'sk_... หรือ xl_...';}
+  });
+  const err=document.getElementById('apiErr');
+  if(err) err.style.display='none';
+  setTimeout(()=>{const i=document.getElementById('apiKeyInput');if(i)i.focus();},100);
+}
+
+function getApiKey() {
+  const key = localStorage.getItem('smk_api_key')||'';
+  if(!key||key.length<10){
+    const m=document.getElementById('api-modal');
+    if(m) m.classList.remove('hidden');
+    return '';
+  }
+  return key;
+}
+
+function getElabsKey() {
+  return localStorage.getItem('smk_elabs_key')||'';
+}
+
+// Auto-hide modal if Anthropic key exists
+(function(){
+  const ak=localStorage.getItem('smk_api_key');
+  const modal=document.getElementById('api-modal');
+  if(!modal) return;
+  if(ak&&ak.length>10){
+    modal.classList.add('hidden');
+  }
+})();
+
+// ── SCROLL ANIMATIONS ─────────────────────────────────────
+const _obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    e.target.classList.add('show');
+    e.target.querySelectorAll('.mbar-fill,.cap-bar-fill').forEach(b=>{
+      const w=b.dataset.w;if(w)setTimeout(()=>b.style.width=w+'%',300);
+    });
+  });
+},{threshold:0.12});
+document.querySelectorAll('.anim').forEach(el=>_obs.observe(el));
+setTimeout(()=>{
+  document.querySelectorAll('.mbar-fill,.cap-bar-fill').forEach(b=>{
+    if(b.closest('.anim')?.classList.contains('show')){
+      const w=b.dataset.w;if(w)b.style.width=w+'%';
+    }
+  });
+},700);
+
 const KB=`You are น้องอับดุล, a friendly AI for Samakee 99 Co.,Ltd. (SMK). Speak Thai. Use emojis occasionally.
 FACTS: Founded 1989, ISO 9001:2015 + IATF 16949, tagline "Metal Fabrication Expert / HIGH QUALITY WITH COMPATIBLE PRICE", Tel 02-2946850, email sales@samakee99.com, Hours Mon-Sat 8-17.
 PRODUCTS: Cable Control (Motor 56%,Seating 18%,Vehicle 16%), Screw&Nut M3-M25, Stamping min0.5mm, Forging, Wire Bending 200K/mo, CNC Ø3-38mm Ti/Inconel/SS, Plastic Cover HDPE.
@@ -686,493 +1028,438 @@ function rmT(){const e=document.getElementById('cbt');if(e)e.remove();}
 
 
 
-// ════════════════════════════════════════════════════════
-// SMK RAP ENGINE v2 — Beat-Locked Flow
-// ════════════════════════════════════════════════════════
-let audioCtx  = null;
-let beatTick  = null;   // setInterval for drum scheduler
-let rapBPM    = 88;
-let stepIdx   = 0;
-let vizActive = false;
 
-// 16-step patterns
+// ════════════════════════════════════════════════════════
+// SMK BEAT ENGINE (preview only) + SUNO WORKFLOW
+// ════════════════════════════════════════════════════════
+let audioCtx = null;
+let beatTick = null;
+let rapBPM   = 88;
+let stepIdx  = 0;
+let beatOn   = false;
+let vizOn    = false;
 const PAT = {
-  kick:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0],
-  snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
-  hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
-  open:  [0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1],
+  kick:  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0],
+  snare: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+  hihat: [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+  open:  [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
 };
-
-function getCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  if (audioCtx.state==='suspended') audioCtx.resume();
+function getCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
   return audioCtx;
 }
+function mkKick(t){const c=getCtx(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(160,t);o.frequency.exponentialRampToValueAtTime(38,t+0.18);g.gain.setValueAtTime(1.4,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.32);o.start(t);o.stop(t+0.32);}
+function mkSnare(t){const c=getCtx(),sz=c.sampleRate*0.14,buf=c.createBuffer(1,sz,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;const ns=c.createBufferSource();ns.buffer=buf;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=2000;f.Q.value=0.6;const g=c.createGain();ns.connect(f);f.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0.75,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.14);ns.start(t);ns.stop(t+0.14);const o=c.createOscillator(),g2=c.createGain();o.connect(g2);g2.connect(c.destination);o.frequency.value=185;g2.gain.setValueAtTime(0.4,t);g2.gain.exponentialRampToValueAtTime(0.001,t+0.1);o.start(t);o.stop(t+0.1);}
+function mkHat(t,open=false){const c=getCtx(),dur=open?0.2:0.045,sz=Math.floor(c.sampleRate*dur),buf=c.createBuffer(1,sz,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;const ns=c.createBufferSource();ns.buffer=buf;const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=8000;const g=c.createGain();ns.connect(f);f.connect(g);g.connect(c.destination);g.gain.setValueAtTime(open?0.22:0.14,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);ns.start(t);ns.stop(t+dur);}
+function mkBass(t,step){if(!PAT.kick[step])return;const c=getCtx(),o=c.createOscillator(),g=c.createGain();o.type='sawtooth';const seq=[55,55,55,65,55,55,73,55];o.frequency.value=seq[Math.floor(step/2)%seq.length];o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0.18,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.22);o.start(t);o.stop(t+0.22);}
 
-// ── Drum sounds ──────────────────────────────────────────
-function mkKick(t) {
-  const c=getCtx(), o=c.createOscillator(), g=c.createGain();
-  o.connect(g); g.connect(c.destination);
-  o.frequency.setValueAtTime(160,t);
-  o.frequency.exponentialRampToValueAtTime(38,t+0.18);
-  g.gain.setValueAtTime(1.4,t);
-  g.gain.exponentialRampToValueAtTime(0.001,t+0.32);
-  o.start(t); o.stop(t+0.32);
-}
-function mkSnare(t) {
-  const c=getCtx();
-  const sz=c.sampleRate*0.14, buf=c.createBuffer(1,sz,c.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
-  const ns=c.createBufferSource(); ns.buffer=buf;
-  const f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2000; f.Q.value=0.6;
-  const g=c.createGain();
-  ns.connect(f); f.connect(g); g.connect(c.destination);
-  g.gain.setValueAtTime(0.8,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.14);
-  ns.start(t); ns.stop(t+0.14);
-  const o=c.createOscillator(), g2=c.createGain();
-  o.connect(g2); g2.connect(c.destination);
-  o.frequency.value=185;
-  g2.gain.setValueAtTime(0.45,t); g2.gain.exponentialRampToValueAtTime(0.001,t+0.1);
-  o.start(t); o.stop(t+0.1);
-}
-function mkHat(t, open=false) {
-  const c=getCtx(), dur=open?0.2:0.045;
-  const sz=Math.floor(c.sampleRate*dur), buf=c.createBuffer(1,sz,c.sampleRate);
-  const d=buf.getChannelData(0);
-  for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
-  const ns=c.createBufferSource(); ns.buffer=buf;
-  const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=8000;
-  const g=c.createGain();
-  ns.connect(f); f.connect(g); g.connect(c.destination);
-  g.gain.setValueAtTime(open?0.22:0.14,t);
-  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
-  ns.start(t); ns.stop(t+dur);
-}
-function mkBass(t, step) {
-  if(!PAT.kick[step]) return;
-  const c=getCtx(), o=c.createOscillator(), g=c.createGain();
-  o.type='sawtooth';
-  const bassSeq=[55,55,55,65, 55,55,73,55];
-  o.frequency.value = bassSeq[Math.floor(step/2)%bassSeq.length];
-  o.connect(g); g.connect(c.destination);
-  g.gain.setValueAtTime(0.2,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.24);
-  o.start(t); o.stop(t+0.24);
-}
-
-// ── Beat scheduler ────────────────────────────────────────
-let _nextStepTime = 0;
-function startBeat() {
-  const c=getCtx();
-  const step16 = (60/rapBPM)/4;
-  _nextStepTime = c.currentTime + 0.05;
-  stepIdx = 0;
-  beatTick = setInterval(()=>{
-    const now = c.currentTime;
-    while(_nextStepTime < now+0.25) {
-      const s = stepIdx%16;
-      if(PAT.kick[s])  mkKick(_nextStepTime);
-      if(PAT.snare[s]) mkSnare(_nextStepTime);
-      if(PAT.hihat[s]) mkHat(_nextStepTime);
-      if(PAT.open[s])  mkHat(_nextStepTime, true);
-      mkBass(_nextStepTime, s);
-      paintStep(s);
-      if(vizActive) tickViz();
-      stepIdx++;
-      _nextStepTime += step16;
+let _nxt=0;
+function startBeat(){
+  const c=getCtx(), s16=(60/rapBPM)/4;
+  _nxt=c.currentTime+0.05; stepIdx=0;
+  beatTick=setInterval(()=>{
+    const now=c.currentTime;
+    while(_nxt<now+0.25){
+      const s=stepIdx%16;
+      if(PAT.kick[s]) mkKick(_nxt);
+      if(PAT.snare[s]) mkSnare(_nxt);
+      if(PAT.hihat[s]) mkHat(_nxt);
+      if(PAT.open[s]) mkHat(_nxt,true);
+      mkBass(_nxt,s);
+      if(vizOn) tickMiniViz();
+      stepIdx++; _nxt+=s16;
     }
-  }, 20);
+  },20);
 }
-function stopBeat() {
-  clearInterval(beatTick); beatTick=null; stepIdx=0;
-  resetGrid(); resetViz();
-}
-function setBPM(v) {
-  rapBPM=v;
-  if(beatTick){ stopBeat(); startBeat(); }
-}
-
-// ── Beat Grid UI ─────────────────────────────────────────
-function initGrid() {
-  const row=document.getElementById('rpBeatRow');
-  if(!row) return;
-  row.innerHTML='';
-  for(let i=0;i<16;i++){
-    const s=document.createElement('div');
-    s.className='rp-step'+(PAT.kick[i]?' kick':PAT.snare[i]?' snare':(PAT.hihat[i]||PAT.open[i])?' hihat':'');
-    s.id='stp'+i; row.appendChild(s);
-  }
-  const viz=document.getElementById('rpViz');
-  if(viz){
-    viz.innerHTML='';
-    [10,18,26,36,30,22,16,28,38,28,20,32,42,28,18,12,22,32,38].forEach((h,i)=>{
-      const b=document.createElement('div');
-      b.className='rp-bar'; b.id='vb'+i;
-      b.style.cssText=`--h:${h}px;--dur:${(0.12+Math.random()*0.18).toFixed(2)}s`;
-      viz.appendChild(b);
-    });
-  }
-}
-function paintStep(s){
-  for(let i=0;i<16;i++){
-    const el=document.getElementById('stp'+i); if(!el) continue;
-    const base=PAT.kick[i]?'kick':PAT.snare[i]?'snare':(PAT.hihat[i]||PAT.open[i])?'hihat':'';
-    el.className='rp-step'+(base?' '+base:'')+(i===s?' active':'');
-  }
-}
-function resetGrid(){ for(let i=0;i<16;i++) paintStep(-1); }
-function tickViz(){
-  for(let i=0;i<19;i++){
-    const b=document.getElementById('vb'+i); if(b) b.classList.add('active');
-  }
-}
-function resetViz(){ for(let i=0;i<19;i++){const b=document.getElementById('vb'+i);if(b)b.classList.remove('active');} }
-
-// ════════════════════════════════════════════════════════
-// RAP VOICE ENGINE — Beat-Locked Chunked Flow
-// ════════════════════════════════════════════════════════
-let rapTimers  = [];   // all pending setTimeout handles
-let rapChunks  = [];   // [{text, lineIdx, chunkIdx, timeMs}]
-let rapRawLines= [];
-let isRapping  = false;
-
-// ── Clean one lyrics line ─────────────────────────────────
-function cleanLine(line) {
-  return line
-    .replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27FF}]/gu,'') // strip emoji
-    .replace(/^\[.*?\]/, '')           // strip [VERSE] [HOOK] headers
-    .replace(/[^\u0E00-\u0E7FA-Za-z0-9 ,.!?']/g,' ')
-    .replace(/\s+/g,' ').trim();
+function stopBeat(){clearInterval(beatTick);beatTick=null;stepIdx=0;resetMiniViz();}
+function setBPM(v){rapBPM=v;if(beatTick){stopBeat();startBeat();}}
+function toggleBeat(){
+  const btn=document.getElementById('beatPlayBtn');
+  if(beatOn){stopBeat();beatOn=false;vizOn=false;if(btn)btn.textContent='▶ Beat';}
+  else{startBeat();beatOn=true;vizOn=true;if(btn)btn.textContent='■ หยุด';}
 }
 
-// ── Build beat-locked chunk schedule ─────────────────────
-// Each LINE = 1 bar (4 beats = 4 × beatMs)
-// Each LINE is split into 2 HALVES → each half fires on beat 1 and beat 3
-function buildSchedule(lyrics, bpm) {
-  const beatMs   = 60000 / bpm;
-  const barMs    = beatMs * 4;          // 1 bar = 4 beats
-  const halfBar  = barMs / 2;           // fire on beat 1 + beat 3
-  const chunks   = [];
-  const rawLines = [];
+// Mini visualizer
+function initMiniViz(){
+  const v=document.getElementById('beatVizMini'); if(!v)return;
+  v.innerHTML='';
+  [8,14,20,28,22,16,24,32,24,18,26,20].forEach((h,i)=>{
+    const b=document.createElement('div');
+    b.className='bvbar';b.id='bv'+i;
+    b.style.cssText=`--h:${h}px;--d:${(0.1+Math.random()*0.15).toFixed(2)}s`;
+    v.appendChild(b);
+  });
+}
+function tickMiniViz(){for(let i=0;i<12;i++){const b=document.getElementById('bv'+i);if(b)b.classList.add('on');}}
+function resetMiniViz(){for(let i=0;i<12;i++){const b=document.getElementById('bv'+i);if(b)b.classList.remove('on');}}
 
-  // 2-bar count-in silence before first lyric
-  let timeMs = barMs * 2;
-  let lineIdx = 0;
+// ── Tab switcher ─────────────────────────────────────────
+function switchTab(tab) {
+  ['lyrics','suno'].forEach(t => {
+    const pane = document.getElementById('tabLyrics'.replace('lyrics', t==='lyrics'?'lyrics':'Suno').replace('Lyrics','Lyrics').replace('Suno','Suno'));
+    const btn  = document.getElementById('tabBtn' + (t==='lyrics'?'Lyrics':'Suno'));
+    const paneEl = document.getElementById('tab' + (t==='lyrics'?'Lyrics':'Suno'));
+    if(btn) btn.classList.toggle('active', t===tab);
+    if(paneEl) paneEl.classList.toggle('active', t===tab);
+  });
+}
 
-  lyrics.split('\n').forEach(raw => {
-    const trimmed = raw.trim();
-
-    // blank line = half-bar rest
-    if (!trimmed) { timeMs += halfBar; return; }
-
-    // Section header [VERSE] / [HOOK] etc → 1-bar gap + label line
-    if (/^\[|^(VERSE|HOOK|CHORUS|BRIDGE|OUTRO|INTRO)/i.test(trimmed)) {
-      rawLines.push({ text: trimmed, isHeader: true });
-      lineIdx++;
-      timeMs += barMs;
-      return;
+// ── Format lyrics for display (colorize section headers) ─
+function formatLyricsHTML(text) {
+  return text.split('\n').map(line => {
+    const t = line.trim();
+    if (/^\[(INTRO|VERSE|HOOK|CHORUS|BRIDGE|OUTRO|INTERLUDE)/i.test(t)) {
+      return `<span class="lyrics-section-label">${t}</span>`;
     }
+    return t ? `<span>${t}</span>\n` : '<br>';
+  }).join('');
+}
 
-    const clean = cleanLine(trimmed);
-    if (!clean || clean.length < 2) { timeMs += halfBar; return; }
+// ── Build Suno prompt ─────────────────────────────────────
+function buildSunoPrompt(lyrics, keywords) {
+  return `[Genre]
+Thai Hip-Hop, Rap
 
-    rawLines.push({ text: trimmed, isHeader: false });
+[Style]
+Thai street rap, melodic hook, Thaitanium influenced, Fucking Hero storytelling style, boom bap beat, confident flow, soulful, proud working class anthem
 
-    // Split line into 2 half-bar chunks
-    const words = clean.split(' ').filter(Boolean);
-    // Split into 3 chunks for longer lines (8-12 words) for natural rap phrasing
-    let parts;
-    if (words.length <= 5) {
-      parts = [words.join(' ')];
-    } else if (words.length <= 8) {
-      const m = Math.ceil(words.length / 2);
-      parts = [words.slice(0,m).join(' '), words.slice(m).join(' ')];
-    } else {
-      const t1 = Math.ceil(words.length / 3);
-      const t2 = Math.ceil(words.length * 2 / 3);
-      parts = [
-        words.slice(0, t1).join(' '),
-        words.slice(t1, t2).join(' '),
-        words.slice(t2).join(' ')
-      ];
+[Mood]
+Confident, proud, energetic, grounded, inspiring
+
+[BPM]
+${rapBPM}
+
+[Instruments]
+Heavy kick drum, crisp snare, hi-hat, deep bass line, subtle strings in hook, vinyl scratch accents
+
+[Language]
+Thai with English technical terms
+
+[Keywords included]
+${keywords}
+
+[Lyrics]
+${lyrics}`.trim();
+}
+
+// ── Copy Suno prompt ─────────────────────────────────────
+let sunoPromptText = '';
+function copySunoPrompt() {
+  if (!sunoPromptText) return;
+  navigator.clipboard.writeText(sunoPromptText).then(() => {
+    const btn = document.getElementById('sunoCopyBtn');
+    if (btn) {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 Copy Prompt'; btn.classList.remove('copied'); }, 2500);
     }
-    parts = parts.filter(Boolean);
-    const partDur = (barMs * 1.5) / parts.length;
-
-    parts.forEach((chunk, ci) => {
-      chunks.push({
-        text:    chunk,
-        lineIdx: lineIdx,
-        timeMs:  timeMs + ci * partDur,
-      });
-    });
-
-    lineIdx++;
-    timeMs += barMs * 1.5;  // longer lines need 1.5 bars to breathe
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = sunoPromptText;
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('sunoCopyBtn');
+    if (btn) { btn.textContent = '✓ Copied!'; btn.classList.add('copied'); setTimeout(()=>{btn.textContent='📋 Copy Prompt';btn.classList.remove('copied');},2500); }
   });
-
-  return { chunks, rawLines, totalMs: timeMs };
-}
-
-// ── Speak one chunk at a specific rate/pitch ──────────────
-function speakChunk(text, rate, pitch) {
-  if (!window.speechSynthesis) return;
-  const utt = new SpeechSynthesisUtterance(text);
-  // Prefer a voice with good rhythm — Thai voice if available
-  const voices = window.speechSynthesis.getVoices();
-  const thaiV  = voices.find(v => v.lang.startsWith('th'));
-  const enV    = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male'));
-  if      (thaiV) utt.voice = thaiV;
-  else if (enV)   utt.voice = enV;
-  utt.rate   = rate;
-  utt.pitch  = pitch;
-  utt.volume = 1.0;
-  window.speechSynthesis.speak(utt);
-}
-
-// ── Highlight current line in lyrics panel ───────────────
-function highlightLine(lineIdx) {
-  document.querySelectorAll('.rp-line').forEach((el, i) => {
-    if      (i < lineIdx)  el.className = 'rp-line done';
-    else if (i === lineIdx) el.className = 'rp-line singing';
-    else                   el.className = 'rp-line';
-  });
-  const el = document.getElementById('rline-' + lineIdx);
-  if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
-
-// ── Render lyrics display ─────────────────────────────────
-function renderLyrics(rawLines) {
-  const c = document.getElementById('rpLyrics');
-  if (!c) return;
-  c.innerHTML = rawLines.map((l, i) =>
-    `<div class="rp-line${l.isHeader?' rp-header':''}" id="rline-${i}">${
-      l.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    }</div>`
-  ).join('');
-}
-
-// ── Main play / stop ──────────────────────────────────────
-function startRap() {
-  if (!rapChunks.length) return;
-  isRapping = true;
-  vizActive = true;
-  startBeat();
-
-  const bpm   = rapBPM;
-  const baseRate  = 1.45 + (bpm - 80) * 0.008;  // slightly slower for meaningful lyrics
-  const basePitch = 0.88;
-
-  // Cancel any residual speech
-  window.speechSynthesis.cancel();
-
-  // Pre-load voices (Chrome lazy-loads)
-  window.speechSynthesis.getVoices();
-
-  let lastLineIdx = -1;
-
-  rapChunks.forEach((chunk, ci) => {
-    const t = setTimeout(() => {
-      if (!isRapping) return;
-
-      // Highlight line on first chunk of each new line
-      if (chunk.lineIdx !== lastLineIdx) {
-        highlightLine(chunk.lineIdx);
-        lastLineIdx = chunk.lineIdx;
-      }
-
-      // Alternate pitch: chunk 0 of bar = higher, chunk 1 = slightly lower
-      // Creates the natural "DUM-da" rap cadence feel
-      const isDownbeat = (ci % 2 === 0);
-      const pitch = isDownbeat ? basePitch + 0.12 : basePitch - 0.05;
-      const rate  = isDownbeat ? baseRate + 0.05  : baseRate - 0.05;
-
-      speakChunk(chunk.text, rate, pitch);
-    }, chunk.timeMs);
-
-    rapTimers.push(t);
-  });
-
-  document.getElementById('playBtn').style.display = 'none';
-  document.getElementById('stopBtn').style.display = '';
-}
-
-function stopRap() {
-  isRapping = false;
-  vizActive = false;
-  rapTimers.forEach(clearTimeout);
-  rapTimers = [];
-  stopBeat();
-  window.speechSynthesis.cancel();
-  document.querySelectorAll('.rp-line').forEach(el => el.className = 'rp-line');
-  document.getElementById('playBtn').style.display = '';
-  document.getElementById('stopBtn').style.display = 'none';
 }
 
 // ════════════════════════════════════════════════════════
-// doRap — Generate + Build Schedule
+// doRap — Generate lyrics + Suno prompt
 // ════════════════════════════════════════════════════════
 async function doRap(){
-  const kw = document.getElementById('rapKw').value.trim();
-  if (!kw) { alert('ใส่ Keyword ก่อนนะครับ 🎤'); return; }
+  const kw  = document.getElementById('rapKw').value.trim();
+  if(!kw){alert('ใส่ Keyword ก่อนนะครับ 🎤');return;}
+  const btn  = document.getElementById('rapGo');
+  const wrap = document.getElementById('rapResultWrap');
+  const lyricsEl  = document.getElementById('rapLyricsDisplay');
+  const sunoEl    = document.getElementById('sunoPromptBox');
 
-  const btn    = document.getElementById('rapGo');
-  const outEl  = document.getElementById('rapOut');
-  const player = document.getElementById('rapPlayer');
+  // Stop beat if playing
+  if(beatOn){toggleBeat();}
 
-  stopRap();
-  btn.disabled = true; btn.textContent = '⏳ กำลังแต่ง...';
-  outEl.classList.add('on');
-  outEl.textContent = '🎵 น้องอับดุลกำลังแต่งเพลง + สร้าง Beat รอแป๊บนึงครับ...';
-  player.classList.remove('on');
+  btn.disabled=true; btn.textContent='⏳ กำลังแต่ง...';
+  wrap.classList.remove('on');
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': getApiKey(),
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':getApiKey(),
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
       },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `แต่งเพลง RAP ภาษาไทย สไตล์ Fucking Hero และ Thaitanium สำหรับบริษัท Samakee 99 (SMK) โดยใส่ Keyword: "${kw}"
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1200,
+        messages:[{
+          role:'user',
+          content:`แต่งเพลง RAP ภาษาไทย สำหรับบริษัท Samakee 99 (SMK) โดยใส่ Keyword: "${kw}"
 
-สไตล์ที่ต้องการ:
-- Flow แบบ Thaitanium: คำสัมผัสลึก ฟังแล้วโยกตาม จังหวะแน่น ภาษาไทยผสมอังกฤษเป็นธรรมชาติ
-- Storytelling แบบ Fucking Hero: มีความหมาย เล่าเรื่องได้ ภูมิใจในสิ่งที่ทำ ไม่โอ้อวดเกินจริง
-- เนื้อหาต้องมีความหมายจริงๆ เกี่ยวกับความภาคภูมิใจในงานช่างฝีมือ โรงงาน แรงงาน และคุณภาพ
+สไตล์: Fucking Hero และ Thaitanium — มีความหมาย เล่าเรื่อง ภูมิใจในงานช่าง จังหวะแน่น
 
-กฎการแต่ง:
-- แต่ละบรรทัดยาว 8-12 คำ มีสัมผัสท้ายบรรทัดคู่กัน (บรรทัด 1 สัมผัสกับ 2, บรรทัด 3 กับ 4)
-- ใช้ภาษาไทยกลาง ผสมอังกฤษเฉพาะคำ technical เช่น CNC, ISO, quality
-- ห้ามใช้ภาษาหยาบ ให้ภูมิใจ มั่นใจ แต่ไม่โอ้อวด
-- ใส่ชีวิตจริงในโรงงาน: เสียงเครื่องจักร เหล็ก ไฟ ความแม่นยำ ทีมงาน
+หลักการแต่ง:
+- แต่ละบรรทัดมีสัมผัสท้าย บรรทัด 1 สัมผัสกับ 2, บรรทัด 3 สัมผัสกับ 4
+- ภาษาไทยกลาง ผสมอังกฤษเฉพาะคำ technical (CNC, ISO, quality, precision)
+- เนื้อหาพูดถึงชีวิตจริงในโรงงาน เสียงเครื่องจักร ความแม่นยำ ทีมงาน ความภูมิใจ
 - ใส่ Keyword "${kw}" ในเนื้อเพลงอย่างเป็นธรรมชาติ
+- ไม่ใช้ภาษาหยาบ แต่ให้ฟังดู authentic มีพลัง
+- Hook ต้องติดหู จำง่าย อยากร้องตาม
 
-ข้อมูล SMK ที่ต้องใส่บางส่วน:
-- ก่อตั้ง 1989 ที่กรุงเทพฯ โดยคนไทย
+ข้อมูล SMK:
+- ก่อตั้ง 1989 กรุงเทพฯ โดยคนไทย
 - ผลิตชิ้นส่วนโลหะ: CNC, Stamping, Forging, Wire Bending
-- ส่งชิ้นส่วนให้ Yamaha, Honda, Toyota — แบรนด์ระดับโลก
+- ส่งชิ้นส่วนให้ Yamaha, Honda — แบรนด์ระดับโลก
 - ได้มาตรฐาน ISO 9001 และ IATF 16949
-- "High Quality with Compatible Price" คือปรัชญา
+- "High Quality with Compatible Price"
 
-Format (ใช้ตัวอักษรเท่านั้น ไม่ต้องใส่ emoji กลางเนื้อเพลง):
+Format (ใส่ header ในวงเล็บเหลี่ยม):
 
 [INTRO]
-(2 บรรทัด ปูเรื่อง บอกว่า SMK คือใคร)
+(2 บรรทัด)
 
 [VERSE 1]
-(4 บรรทัด เล่าถึงงานช่างและโรงงาน)
+(4 บรรทัด — เล่าถึงงานช่างและโรงงาน)
 
 [HOOK]
-(4 บรรทัด — จำง่าย ติดหู โยกได้ สัมผัสแน่น)
+(4 บรรทัด — ติดหู โยกได้ เป็น hook หลัก)
 
 [VERSE 2]
-(4 บรรทัด ใส่ Keyword "${kw}" และความภูมิใจในคุณภาพ)
+(4 บรรทัด — ใส่ Keyword และความภูมิใจในคุณภาพ)
 
 [HOOK]
 
 [OUTRO]
-(2 บรรทัด จบแบบมั่นใจ)`
+(2 บรรทัด — จบแบบมั่นใจ)`
         }]
       })
     });
-
     const data   = await res.json();
-    const lyrics = data.content?.[0]?.text || 'เกิดข้อผิดพลาด';
+    const lyrics = data.content?.[0]?.text || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
 
-    outEl.textContent = lyrics;
+    // Display lyrics with styled headers
+    if(lyricsEl) lyricsEl.innerHTML = formatLyricsHTML(lyrics);
 
-    // Build beat-locked schedule
-    const { chunks, rawLines } = buildSchedule(lyrics, rapBPM);
-    rapChunks   = chunks;
-    rapRawLines = rawLines;
+    // Build and store Suno prompt
+    sunoPromptText = buildSunoPrompt(lyrics, kw);
+    if(sunoEl) sunoEl.textContent = sunoPromptText;
 
-    renderLyrics(rawLines);
-    initGrid();
-    player.classList.add('on');
-    document.getElementById('playBtn').style.display = '';
-    document.getElementById('stopBtn').style.display = 'none';
+    // Save lyrics for ElevenLabs + show result
+    currentLyrics = lyrics;
+    wrap.classList.add('on');
+    initMiniViz();
+    initElabsWave();
 
-  } catch(e) {
-    outEl.textContent = '❌ เกิดข้อผิดพลาด กรุณาลองใหม่';
+    // Show ElevenLabs player
+    const ep = document.getElementById('elabsPlayer');
+    if(ep) ep.classList.add('on');
+
+    switchTab('lyrics');
+
+  }catch(e){
+    alert('เกิดข้อผิดพลาด กรุณาตรวจสอบ API Key และลองใหม่');
+    console.error(e);
   }
-
-  btn.disabled = false; btn.textContent = '🎤 GENERATE';
+  btn.disabled=false; btn.textContent='🎤 GENERATE';
 }
 
-// ── API KEY MANAGEMENT ──────────────────────────────────
-function saveApiKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  const err = document.getElementById('apiErr');
-  if (!val || val.length < 10) {
-    err.textContent = '⚠ กรุณากรอก API Key ให้ครบถ้วน';
-    err.style.display = 'block'; return;
-  }
-  err.style.display = 'none';
-  localStorage.setItem('smk_api_key', val);
-  console.log('API Key saved, length:', val.length);
-  document.getElementById('api-modal').classList.add('hidden');
-}
+// ════════════════════════════════════════════════════════
+// ELEVENLABS VOICE ENGINE
+// ════════════════════════════════════════════════════════
+let elabsAudioQueue = [];   // Array of AudioBuffer
+let elabsLineTexts  = [];   // Array of display lines
+let elabsPlaying    = false;
+let elabsCtx        = null;
+let elabsSource     = null;
+let elabsWaveTimer  = null;
+let currentLyrics   = '';
 
-function resetApiKey() {
-  localStorage.removeItem('smk_api_key');
-  const m = document.getElementById('api-modal');
-  if (m) m.classList.remove('hidden');
-  const inp = document.getElementById('apiKeyInput');
-  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 100); }
-  const err = document.getElementById('apiErr');
-  if (err) err.style.display = 'none';
-}
+const ELABS_API = 'https://api.elevenlabs.io/v1/text-to-speech';
+const ELABS_MODEL = 'eleven_multilingual_v2';
 
-function getApiKey() {
-  const key = localStorage.getItem('smk_api_key') || '';
-  if (!key || key.length < 20) {
-    localStorage.removeItem('smk_api_key');
-    const m = document.getElementById('api-modal');
-    if (m) {
-      m.classList.remove('hidden');
-      const inp = document.getElementById('apiKeyInput');
-      if (inp) setTimeout(() => inp.focus(), 100);
-    }
-    return '';
-  }
-  return key;
-}
-
-// Auto-hide modal only if key exists AND looks valid
-(function(){
-  const key = localStorage.getItem('smk_api_key');
-  const modal = document.getElementById('api-modal');
-  if (!modal) return;
-  if (key && key.length > 20) {
-    modal.classList.add('hidden');
-  }
-  // Always show modal if key is missing or too short
-})();
-
-// ── SCROLL ANIMATIONS ───────────────────────────────────
-const _obs = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (!e.isIntersecting) return;
-    e.target.classList.add('show');
-    e.target.querySelectorAll('.mbar-fill, .cap-bar-fill').forEach(b => {
-      const w = b.dataset.w; if (w) setTimeout(() => b.style.width = w+'%', 300);
-    });
+// ── Init waveform bars ────────────────────────────────────
+function initElabsWave() {
+  const w = document.getElementById('elabsWave');
+  if (!w) return;
+  w.innerHTML = '';
+  const heights = [8,14,22,30,24,18,26,34,26,20,28,22,16,24,18];
+  heights.forEach((h,i) => {
+    const b = document.createElement('div');
+    b.className = 'elabs-wbar';
+    b.id = 'ew' + i;
+    b.style.cssText = `--h:${h}px;--d:${(0.1+Math.random()*0.15).toFixed(2)}s`;
+    w.appendChild(b);
   });
-}, { threshold: 0.12 });
-document.querySelectorAll('.anim').forEach(el => _obs.observe(el));
-setTimeout(() => {
-  document.querySelectorAll('.mbar-fill, .cap-bar-fill').forEach(b => {
-    if (b.closest('.anim')?.classList.contains('show')) {
-      const w = b.dataset.w; if (w) b.style.width = w+'%';
-    }
+}
+function startElabsWave() {
+  for(let i=0;i<15;i++){const b=document.getElementById('ew'+i);if(b)b.classList.add('active');}
+}
+function stopElabsWave() {
+  for(let i=0;i<15;i++){const b=document.getElementById('ew'+i);if(b)b.classList.remove('active');}
+}
+
+// ── Set status message ────────────────────────────────────
+function setElabsStatus(msg, show=true) {
+  const s = document.getElementById('elabsStatus');
+  const t = document.getElementById('elabsStatusText');
+  if(s) s.style.display = show ? 'flex' : 'none';
+  if(t) t.textContent = msg;
+}
+
+// ── Fetch audio for one text chunk from ElevenLabs ────────
+async function fetchElabsAudio(text, voiceId, apiKey) {
+  const res = await fetch(`${ELABS_API}/${voiceId}`, {
+    method: 'POST',
+    headers: {
+      'xi-api-key': apiKey,
+      'Content-Type': 'application/json',
+      'Accept': 'audio/mpeg',
+    },
+    body: JSON.stringify({
+      text: text,
+      model_id: ELABS_MODEL,
+      voice_settings: {
+        stability: 0.35,          // Lower = more expressive/emotional
+        similarity_boost: 0.75,
+        style: 0.45,              // Style exaggeration — more dynamic
+        use_speaker_boost: true,
+      }
+    })
   });
-}, 700);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`ElevenLabs error ${res.status}: ${err}`);
+  }
+  const arrayBuf = await res.arrayBuffer();
+  if (!elabsCtx) elabsCtx = new (window.AudioContext||window.webkitAudioContext)();
+  return await elabsCtx.decodeAudioData(arrayBuf);
+}
+
+// ── Parse lyrics into lines for TTS ─────────────────────
+function parseLyricsToLines(text) {
+  return text.split('
+')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+}
+
+// ── Main: generate all audio then play sequentially ──────
+async function generateAndPlayVoice() {
+  const apiKey  = getElabsKey();
+  const voiceId = (document.getElementById('voiceSelect')||{}).value || 'pNInz6obpgDQGcFmaJgB';
+
+  if (!apiKey || apiKey.length < 10) {
+    // No key — open settings
+    resetApiKey();
+    return;
+  }
+  if (!currentLyrics) {
+    alert('กรุณา Generate เนื้อเพลงก่อนครับ 🎤');
+    return;
+  }
+
+  // Stop any playing
+  stopVoice();
+  elabsPlaying = true;
+
+  const playBtn = document.getElementById('elabsPlayBtn');
+  const stopBtn = document.getElementById('elabsStopBtn');
+  if(playBtn) { playBtn.disabled = true; playBtn.textContent = '⏳ กำลังสร้างเสียง...'; }
+  if(stopBtn) stopBtn.style.display = '';
+
+  initElabsWave();
+  const lines = parseLyricsToLines(currentLyrics);
+
+  // Generate audio for all lines
+  const audioBuffers = [];
+  let generated = 0;
+
+  for (const line of lines) {
+    if (!elabsPlaying) break;
+    setElabsStatus(`กำลังสร้างเสียง ${++generated}/${lines.length} — "${line.slice(0,20)}..."`, true);
+    try {
+      const buf = await fetchElabsAudio(line, voiceId, apiKey);
+      audioBuffers.push({ buf, line });
+    } catch(e) {
+      console.error('ElevenLabs error:', e);
+      if (e.message.includes('401')) {
+        alert('ElevenLabs API Key ไม่ถูกต้อง กรุณาตรวจสอบและใส่ใหม่ครับ');
+        resetApiKey();
+        stopVoice(); return;
+      }
+      // Skip failed line
+      audioBuffers.push({ buf: null, line });
+    }
+  }
+
+  if (!elabsPlaying) { cleanupElabs(); return; }
+
+  setElabsStatus('', false);
+  startBeat();  // Start drum beat
+  startElabsWave();
+
+  if(playBtn) { playBtn.disabled = false; playBtn.textContent = '🎤 สร้างเสียงใหม่'; }
+
+  // Play all buffers sequentially
+  const indicator = document.getElementById('elabsLineIndicator');
+  if(indicator) indicator.classList.add('on');
+
+  for (const { buf, line } of audioBuffers) {
+    if (!elabsPlaying) break;
+
+    // Show current line
+    if(indicator) indicator.textContent = `♪ ${line}`;
+
+    if (!buf) { await sleep(300); continue; }
+
+    // Play this buffer
+    await playBuffer(buf);
+
+    // Small gap between lines (feel of rapper breathing)
+    await sleep(180);
+  }
+
+  stopVoice();
+}
+
+// ── Play one AudioBuffer and await completion ─────────────
+function playBuffer(buf) {
+  return new Promise(resolve => {
+    if (!elabsCtx) elabsCtx = new (window.AudioContext||window.webkitAudioContext)();
+    if (elabsCtx.state === 'suspended') elabsCtx.resume();
+    const source = elabsCtx.createBufferSource();
+    source.buffer = buf;
+    // Add slight pitch variation — more human feel
+    source.playbackRate.value = 0.96 + Math.random()*0.05; // 0.96–1.01
+    source.connect(elabsCtx.destination);
+    source.onended = resolve;
+    source.start();
+    elabsSource = source;
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Stop everything ───────────────────────────────────────
+function stopVoice() {
+  elabsPlaying = false;
+  if(elabsSource) { try{elabsSource.stop();}catch(e){} elabsSource=null; }
+  stopBeat();
+  stopElabsWave();
+  setElabsStatus('', false);
+  cleanupElabs();
+}
+
+function cleanupElabs() {
+  const playBtn = document.getElementById('elabsPlayBtn');
+  const stopBtn = document.getElementById('elabsStopBtn');
+  const indicator = document.getElementById('elabsLineIndicator');
+  if(playBtn) { playBtn.disabled = false; playBtn.textContent = '🎤 สร้างเสียง + เล่น'; }
+  if(stopBtn) stopBtn.style.display = 'none';
+  if(indicator) { indicator.classList.remove('on'); indicator.textContent = ''; }
+}
 
 </script></body></html>
