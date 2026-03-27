@@ -1340,10 +1340,7 @@ async function fetchElabsAudio(text, voiceId, apiKey) {
 
 // ── Parse lyrics into lines for TTS ─────────────────────
 function parseLyricsToLines(text) {
-  return text.split('
-')
-    .map(l => l.trim())
-    .filter(l => l.length > 0);
+  return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 }
 
 // ── Main: generate all audio then play sequentially ──────
