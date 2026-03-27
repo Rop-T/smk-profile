@@ -310,6 +310,10 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
 }
 
 
+
+.rp-header { font-family:var(--mono); font-size:9px; letter-spacing:.2em;
+  color:var(--cyan); opacity:.6; text-transform:uppercase; margin-top:8px; }
+
 /* ── RAP PLAYER ── */
 .rap-player {
   display:none; margin-top:20px;
@@ -671,378 +675,398 @@ function showT(){
 function rmT(){const e=document.getElementById('cbt');if(e)e.remove();}
 
 
-// ═══════════════════════════════════════════════════
-// SMK RAP ENGINE — Beat + Voice
-// ═══════════════════════════════════════════════════
-let audioCtx = null;
-let beatInterval = null;
-let rapBPM = 88;
-let currentStep = 0;
-let isSinging = false;
-let synthVoice = null;
-let rapLines = [];
-let lineIndex = 0;
-let lineTimer = null;
 
-// 16-step drum pattern (1=hit, 0=rest)
-const PATTERNS = {
-  kick:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0],
+// ════════════════════════════════════════════════════════
+// SMK RAP ENGINE v2 — Beat-Locked Flow
+// ════════════════════════════════════════════════════════
+let audioCtx  = null;
+let beatTick  = null;   // setInterval for drum scheduler
+let rapBPM    = 88;
+let stepIdx   = 0;
+let vizActive = false;
+
+// 16-step patterns
+const PAT = {
+  kick:  [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,1,0],
   snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0],
   hihat: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
   open:  [0,0,0,0, 0,0,0,1, 0,0,0,0, 0,0,0,1],
 };
 
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function getCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if (audioCtx.state==='suspended') audioCtx.resume();
   return audioCtx;
 }
 
-// ── Drum sounds using Web Audio ─────────────────────
-function playKick(time) {
-  const ctx = getAudioCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain); gain.connect(ctx.destination);
-  osc.frequency.setValueAtTime(180, time);
-  osc.frequency.exponentialRampToValueAtTime(40, time + 0.15);
-  gain.gain.setValueAtTime(1.2, time);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.3);
-  osc.start(time); osc.stop(time + 0.3);
+// ── Drum sounds ──────────────────────────────────────────
+function mkKick(t) {
+  const c=getCtx(), o=c.createOscillator(), g=c.createGain();
+  o.connect(g); g.connect(c.destination);
+  o.frequency.setValueAtTime(160,t);
+  o.frequency.exponentialRampToValueAtTime(38,t+0.18);
+  g.gain.setValueAtTime(1.4,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+0.32);
+  o.start(t); o.stop(t+0.32);
+}
+function mkSnare(t) {
+  const c=getCtx();
+  const sz=c.sampleRate*0.14, buf=c.createBuffer(1,sz,c.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
+  const ns=c.createBufferSource(); ns.buffer=buf;
+  const f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2000; f.Q.value=0.6;
+  const g=c.createGain();
+  ns.connect(f); f.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(0.8,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.14);
+  ns.start(t); ns.stop(t+0.14);
+  const o=c.createOscillator(), g2=c.createGain();
+  o.connect(g2); g2.connect(c.destination);
+  o.frequency.value=185;
+  g2.gain.setValueAtTime(0.45,t); g2.gain.exponentialRampToValueAtTime(0.001,t+0.1);
+  o.start(t); o.stop(t+0.1);
+}
+function mkHat(t, open=false) {
+  const c=getCtx(), dur=open?0.2:0.045;
+  const sz=Math.floor(c.sampleRate*dur), buf=c.createBuffer(1,sz,c.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<sz;i++) d[i]=Math.random()*2-1;
+  const ns=c.createBufferSource(); ns.buffer=buf;
+  const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=8000;
+  const g=c.createGain();
+  ns.connect(f); f.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(open?0.22:0.14,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  ns.start(t); ns.stop(t+dur);
+}
+function mkBass(t, step) {
+  if(!PAT.kick[step]) return;
+  const c=getCtx(), o=c.createOscillator(), g=c.createGain();
+  o.type='sawtooth';
+  const bassSeq=[55,55,55,65, 55,55,73,55];
+  o.frequency.value = bassSeq[Math.floor(step/2)%bassSeq.length];
+  o.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(0.2,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.24);
+  o.start(t); o.stop(t+0.24);
 }
 
-function playSnare(time) {
-  const ctx = getAudioCtx();
-  // White noise burst
-  const bufSize = ctx.sampleRate * 0.12;
-  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-  const noise = ctx.createBufferSource();
-  noise.buffer = buf;
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'bandpass'; filter.frequency.value = 1800; filter.Q.value = 0.5;
-  const gain = ctx.createGain();
-  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0.7, time);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.12);
-  noise.start(time); noise.stop(time + 0.12);
-  // Tone body
-  const osc = ctx.createOscillator();
-  const g2 = ctx.createGain();
-  osc.connect(g2); g2.connect(ctx.destination);
-  osc.frequency.value = 200;
-  g2.gain.setValueAtTime(0.4, time);
-  g2.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
-  osc.start(time); osc.stop(time + 0.1);
-}
-
-function playHihat(time, open=false) {
-  const ctx = getAudioCtx();
-  const bufSize = ctx.sampleRate * (open ? 0.18 : 0.05);
-  const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-  const noise = ctx.createBufferSource();
-  noise.buffer = buf;
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'highpass'; filter.frequency.value = 7000;
-  const gain = ctx.createGain();
-  noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(open ? 0.25 : 0.15, time);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + (open ? 0.18 : 0.05));
-  noise.start(time); noise.stop(time + (open ? 0.18 : 0.05));
-}
-
-function playBass(time, step) {
-  // Simple bass line on kicks
-  if (!PATTERNS.kick[step]) return;
-  const ctx = getAudioCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = 'sawtooth';
-  osc.connect(gain); gain.connect(ctx.destination);
-  const bassNotes = [55, 55, 65, 55, 55, 65, 73, 55]; // A1, E2, G2 pattern
-  osc.frequency.value = bassNotes[Math.floor(step/2) % bassNotes.length];
-  gain.gain.setValueAtTime(0.18, time);
-  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.22);
-  osc.start(time); osc.stop(time + 0.22);
-}
-
-// ── Beat Scheduler ───────────────────────────────────
-function scheduleStep(step, time) {
-  if (PATTERNS.kick[step])  playKick(time);
-  if (PATTERNS.snare[step]) playSnare(time);
-  if (PATTERNS.hihat[step]) playHihat(time);
-  if (PATTERNS.open[step])  playHihat(time, true);
-  playBass(time, step);
-}
-
+// ── Beat scheduler ────────────────────────────────────────
+let _nextStepTime = 0;
 function startBeat() {
-  const ctx = getAudioCtx();
-  if (ctx.state === 'suspended') ctx.resume();
-  const stepTime = (60 / rapBPM) / 4; // 16th note duration
-  let nextStepTime = ctx.currentTime + 0.05;
-  currentStep = 0;
-
-  beatInterval = setInterval(() => {
-    const now = ctx.currentTime;
-    while (nextStepTime < now + 0.2) {
-      scheduleStep(currentStep % 16, nextStepTime);
-      updateBeatGrid(currentStep % 16);
-      updateViz();
-      currentStep++;
-      nextStepTime += stepTime;
+  const c=getCtx();
+  const step16 = (60/rapBPM)/4;
+  _nextStepTime = c.currentTime + 0.05;
+  stepIdx = 0;
+  beatTick = setInterval(()=>{
+    const now = c.currentTime;
+    while(_nextStepTime < now+0.25) {
+      const s = stepIdx%16;
+      if(PAT.kick[s])  mkKick(_nextStepTime);
+      if(PAT.snare[s]) mkSnare(_nextStepTime);
+      if(PAT.hihat[s]) mkHat(_nextStepTime);
+      if(PAT.open[s])  mkHat(_nextStepTime, true);
+      mkBass(_nextStepTime, s);
+      paintStep(s);
+      if(vizActive) tickViz();
+      stepIdx++;
+      _nextStepTime += step16;
     }
-  }, 25);
+  }, 20);
 }
-
 function stopBeat() {
-  clearInterval(beatInterval);
-  beatInterval = null;
-  currentStep = 0;
-  resetBeatGrid();
-  resetViz();
+  clearInterval(beatTick); beatTick=null; stepIdx=0;
+  resetGrid(); resetViz();
+}
+function setBPM(v) {
+  rapBPM=v;
+  if(beatTick){ stopBeat(); startBeat(); }
 }
 
-// ── Beat Grid UI ─────────────────────────────────────
-function initBeatGrid() {
-  const row = document.getElementById('rpBeatRow');
-  if (!row) return;
-  row.innerHTML = '';
-  for (let i = 0; i < 16; i++) {
-    const s = document.createElement('div');
-    s.className = 'rp-step';
-    s.id = 'step-' + i;
-    row.appendChild(s);
+// ── Beat Grid UI ─────────────────────────────────────────
+function initGrid() {
+  const row=document.getElementById('rpBeatRow');
+  if(!row) return;
+  row.innerHTML='';
+  for(let i=0;i<16;i++){
+    const s=document.createElement('div');
+    s.className='rp-step'+(PAT.kick[i]?' kick':PAT.snare[i]?' snare':(PAT.hihat[i]||PAT.open[i])?' hihat':'');
+    s.id='stp'+i; row.appendChild(s);
   }
-  // Init visualizer bars
-  const viz = document.getElementById('rpViz');
-  if (viz) {
-    viz.innerHTML = '';
-    const heights = [12,20,28,36,32,24,18,28,36,28,22,32,40,28,20,14,22,30,36,28];
-    heights.forEach((h,i) => {
-      const b = document.createElement('div');
-      b.className = 'rp-bar'; b.id = 'vbar-' + i;
-      b.style.setProperty('--h', h+'px');
-      b.style.setProperty('--dur', (0.15 + Math.random()*0.2)+'s');
+  const viz=document.getElementById('rpViz');
+  if(viz){
+    viz.innerHTML='';
+    [10,18,26,36,30,22,16,28,38,28,20,32,42,28,18,12,22,32,38].forEach((h,i)=>{
+      const b=document.createElement('div');
+      b.className='rp-bar'; b.id='vb'+i;
+      b.style.cssText=`--h:${h}px;--dur:${(0.12+Math.random()*0.18).toFixed(2)}s`;
       viz.appendChild(b);
     });
   }
 }
+function paintStep(s){
+  for(let i=0;i<16;i++){
+    const el=document.getElementById('stp'+i); if(!el) continue;
+    const base=PAT.kick[i]?'kick':PAT.snare[i]?'snare':(PAT.hihat[i]||PAT.open[i])?'hihat':'';
+    el.className='rp-step'+(base?' '+base:'')+(i===s?' active':'');
+  }
+}
+function resetGrid(){ for(let i=0;i<16;i++) paintStep(-1); }
+function tickViz(){
+  for(let i=0;i<19;i++){
+    const b=document.getElementById('vb'+i); if(b) b.classList.add('active');
+  }
+}
+function resetViz(){ for(let i=0;i<19;i++){const b=document.getElementById('vb'+i);if(b)b.classList.remove('active');} }
 
-function updateBeatGrid(step) {
-  for (let i = 0; i < 16; i++) {
-    const el = document.getElementById('step-' + i);
-    if (!el) continue;
-    el.classList.remove('active');
-    if (i === step) {
-      el.classList.add('active');
-      if (PATTERNS.kick[i])  el.className = 'rp-step kick active';
-      else if (PATTERNS.snare[i]) el.className = 'rp-step snare active';
-      else if (PATTERNS.hihat[i] || PATTERNS.open[i]) el.className = 'rp-step hihat active';
-      else el.className = 'rp-step active';
-    } else {
-      if (PATTERNS.kick[i])  el.className = 'rp-step kick';
-      else if (PATTERNS.snare[i]) el.className = 'rp-step snare';
-      else if (PATTERNS.hihat[i] || PATTERNS.open[i]) el.className = 'rp-step hihat';
-      else el.className = 'rp-step';
+// ════════════════════════════════════════════════════════
+// RAP VOICE ENGINE — Beat-Locked Chunked Flow
+// ════════════════════════════════════════════════════════
+let rapTimers  = [];   // all pending setTimeout handles
+let rapChunks  = [];   // [{text, lineIdx, chunkIdx, timeMs}]
+let rapRawLines= [];
+let isRapping  = false;
+
+// ── Clean one lyrics line ─────────────────────────────────
+function cleanLine(line) {
+  return line
+    .replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27FF}]/gu,'') // strip emoji
+    .replace(/^\[.*?\]/, '')           // strip [VERSE] [HOOK] headers
+    .replace(/[^\u0E00-\u0E7FA-Za-z0-9 ,.!?']/g,' ')
+    .replace(/\s+/g,' ').trim();
+}
+
+// ── Build beat-locked chunk schedule ─────────────────────
+// Each LINE = 1 bar (4 beats = 4 × beatMs)
+// Each LINE is split into 2 HALVES → each half fires on beat 1 and beat 3
+function buildSchedule(lyrics, bpm) {
+  const beatMs   = 60000 / bpm;
+  const barMs    = beatMs * 4;          // 1 bar = 4 beats
+  const halfBar  = barMs / 2;           // fire on beat 1 + beat 3
+  const chunks   = [];
+  const rawLines = [];
+
+  // 2-bar count-in silence before first lyric
+  let timeMs = barMs * 2;
+  let lineIdx = 0;
+
+  lyrics.split('\n').forEach(raw => {
+    const trimmed = raw.trim();
+
+    // blank line = half-bar rest
+    if (!trimmed) { timeMs += halfBar; return; }
+
+    // Section header [VERSE] / [HOOK] etc → 1-bar gap + label line
+    if (/^\[|^(VERSE|HOOK|CHORUS|BRIDGE|OUTRO|INTRO)/i.test(trimmed)) {
+      rawLines.push({ text: trimmed, isHeader: true });
+      lineIdx++;
+      timeMs += barMs;
+      return;
     }
-  }
+
+    const clean = cleanLine(trimmed);
+    if (!clean || clean.length < 2) { timeMs += halfBar; return; }
+
+    rawLines.push({ text: trimmed, isHeader: false });
+
+    // Split line into 2 half-bar chunks
+    const words = clean.split(' ').filter(Boolean);
+    const mid   = Math.ceil(words.length / 2);
+    const halves = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')].filter(Boolean);
+
+    halves.forEach((chunk, ci) => {
+      chunks.push({
+        text:    chunk,
+        lineIdx: lineIdx,
+        timeMs:  timeMs + ci * halfBar,
+      });
+    });
+
+    lineIdx++;
+    timeMs += barMs;  // each line = exactly 1 bar
+  });
+
+  return { chunks, rawLines, totalMs: timeMs };
 }
 
-function resetBeatGrid() {
-  for (let i = 0; i < 16; i++) {
-    const el = document.getElementById('step-' + i);
-    if (el) {
-      if (PATTERNS.kick[i])  el.className = 'rp-step kick';
-      else if (PATTERNS.snare[i]) el.className = 'rp-step snare';
-      else if (PATTERNS.hihat[i] || PATTERNS.open[i]) el.className = 'rp-step hihat';
-      else el.className = 'rp-step';
-    }
-  }
+// ── Speak one chunk at a specific rate/pitch ──────────────
+function speakChunk(text, rate, pitch) {
+  if (!window.speechSynthesis) return;
+  const utt = new SpeechSynthesisUtterance(text);
+  // Prefer a voice with good rhythm — Thai voice if available
+  const voices = window.speechSynthesis.getVoices();
+  const thaiV  = voices.find(v => v.lang.startsWith('th'));
+  const enV    = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male'));
+  if      (thaiV) utt.voice = thaiV;
+  else if (enV)   utt.voice = enV;
+  utt.rate   = rate;
+  utt.pitch  = pitch;
+  utt.volume = 1.0;
+  window.speechSynthesis.speak(utt);
 }
 
-let vizActive = false;
-function updateViz() {
-  if (!vizActive) return;
-  for (let i = 0; i < 19; i++) {
-    const b = document.getElementById('vbar-'+i);
-    if (b) { b.classList.add('active'); }
-  }
-}
-function resetViz() {
-  for (let i = 0; i < 19; i++) {
-    const b = document.getElementById('vbar-'+i);
-    if (b) b.classList.remove('active');
-  }
+// ── Highlight current line in lyrics panel ───────────────
+function highlightLine(lineIdx) {
+  document.querySelectorAll('.rp-line').forEach((el, i) => {
+    if      (i < lineIdx)  el.className = 'rp-line done';
+    else if (i === lineIdx) el.className = 'rp-line singing';
+    else                   el.className = 'rp-line';
+  });
+  const el = document.getElementById('rline-' + lineIdx);
+  if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
 
-// ── Speech / Rap Voice ────────────────────────────────
-function buildLyricsLines(text) {
-  return text.split('\n').filter(l => l.trim().length > 0);
-}
-
-function renderLyricsDisplay(lines) {
-  const container = document.getElementById('rpLyrics');
-  if (!container) return;
-  container.innerHTML = lines.map((l, i) =>
-    `<div class="rp-line" id="rline-${i}">${l.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+// ── Render lyrics display ─────────────────────────────────
+function renderLyrics(rawLines) {
+  const c = document.getElementById('rpLyrics');
+  if (!c) return;
+  c.innerHTML = rawLines.map((l, i) =>
+    `<div class="rp-line${l.isHeader?' rp-header':''}" id="rline-${i}">${
+      l.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    }</div>`
   ).join('');
 }
 
-function singSingleLine(lineIdx) {
-  if (lineIdx >= rapLines.length || !isSinging) return;
-  // Clear previous highlights
-  document.querySelectorAll('.rp-line').forEach((el, i) => {
-    el.className = i < lineIdx ? 'rp-line done' : 'rp-line';
-  });
-  const el = document.getElementById('rline-' + lineIdx);
-  if (el) {
-    el.className = 'rp-line singing';
-    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
-  }
-  const line = rapLines[lineIdx];
-  // Skip emoji-only or very short lines
-  const cleaned = line.replace(/[\u{1F300}-\u{1FFFF}]/gu,'').trim();
-  if (!cleaned || cleaned.length < 2) {
-    lineTimer = setTimeout(() => singSingleLine(lineIdx + 1), 400);
-    return;
-  }
-  const utt = new SpeechSynthesisUtterance(cleaned);
-  // Select Thai voice if available, else use default
-  const voices = speechSynthesis.getVoices();
-  const thaiVoice = voices.find(v => v.lang.startsWith('th'));
-  if (thaiVoice) utt.voice = thaiVoice;
-  utt.rate  = 1.25 + (rapBPM - 80) * 0.006; // faster with BPM
-  utt.pitch = 0.85;
-  utt.volume = 0.95;
-  utt.onend = () => {
-    if (isSinging) {
-      const delay = line.trim() === '' ? 200 : 80;
-      lineTimer = setTimeout(() => singSingleLine(lineIdx + 1), delay);
-    }
-  };
-  utt.onerror = () => {
-    lineTimer = setTimeout(() => singSingleLine(lineIdx + 1), 500);
-  };
-  speechSynthesis.speak(utt);
-}
-
-function startSinging() {
-  speechSynthesis.cancel();
-  lineIndex = 0;
-  isSinging = true;
-  // Small delay to let beat kick in
-  setTimeout(() => singSingleLine(0), 800);
-}
-
-function stopSinging() {
-  isSinging = false;
-  speechSynthesis.cancel();
-  clearTimeout(lineTimer);
-  document.querySelectorAll('.rp-line').forEach(el => el.className = 'rp-line');
-}
-
-// ── Main Controls ─────────────────────────────────────
+// ── Main play / stop ──────────────────────────────────────
 function startRap() {
-  if (!rapLines.length) return;
+  if (!rapChunks.length) return;
+  isRapping = true;
   vizActive = true;
   startBeat();
-  startSinging();
+
+  const bpm   = rapBPM;
+  const baseRate  = 1.55 + (bpm - 80) * 0.009;  // 88bpm → ~1.62, scales with BPM
+  const basePitch = 0.88;
+
+  // Cancel any residual speech
+  window.speechSynthesis.cancel();
+
+  // Pre-load voices (Chrome lazy-loads)
+  window.speechSynthesis.getVoices();
+
+  let lastLineIdx = -1;
+
+  rapChunks.forEach((chunk, ci) => {
+    const t = setTimeout(() => {
+      if (!isRapping) return;
+
+      // Highlight line on first chunk of each new line
+      if (chunk.lineIdx !== lastLineIdx) {
+        highlightLine(chunk.lineIdx);
+        lastLineIdx = chunk.lineIdx;
+      }
+
+      // Alternate pitch: chunk 0 of bar = higher, chunk 1 = slightly lower
+      // Creates the natural "DUM-da" rap cadence feel
+      const isDownbeat = (ci % 2 === 0);
+      const pitch = isDownbeat ? basePitch + 0.12 : basePitch - 0.05;
+      const rate  = isDownbeat ? baseRate + 0.05  : baseRate - 0.05;
+
+      speakChunk(chunk.text, rate, pitch);
+    }, chunk.timeMs);
+
+    rapTimers.push(t);
+  });
+
   document.getElementById('playBtn').style.display = 'none';
   document.getElementById('stopBtn').style.display = '';
 }
 
 function stopRap() {
+  isRapping = false;
   vizActive = false;
+  rapTimers.forEach(clearTimeout);
+  rapTimers = [];
   stopBeat();
-  stopSinging();
+  window.speechSynthesis.cancel();
+  document.querySelectorAll('.rp-line').forEach(el => el.className = 'rp-line');
   document.getElementById('playBtn').style.display = '';
   document.getElementById('stopBtn').style.display = 'none';
 }
 
-function setBPM(val) {
-  rapBPM = val;
-  if (beatInterval) { stopBeat(); startBeat(); }
-}
-
-// ── doRap (updated) ───────────────────────────────────
+// ════════════════════════════════════════════════════════
+// doRap — Generate + Build Schedule
+// ════════════════════════════════════════════════════════
 async function doRap(){
-  const kw=document.getElementById('rapKw').value.trim();
-  if(!kw){alert('ใส่ Keyword ก่อนนะครับ 🎤');return;}
-  const b=document.getElementById('rapGo'),o=document.getElementById('rapOut');
+  const kw = document.getElementById('rapKw').value.trim();
+  if (!kw) { alert('ใส่ Keyword ก่อนนะครับ 🎤'); return; }
+
+  const btn    = document.getElementById('rapGo');
+  const outEl  = document.getElementById('rapOut');
   const player = document.getElementById('rapPlayer');
-  // Stop any playing
+
   stopRap();
-  b.disabled=true; b.textContent='⏳ กำลังแต่ง...';
-  o.classList.add('on');
-  o.textContent='🎵 น้องอับดุลกำลังแต่งเพลง + สร้าง Beat รอแป๊บนึงครับ...';
+  btn.disabled = true; btn.textContent = '⏳ กำลังแต่ง...';
+  outEl.classList.add('on');
+  outEl.textContent = '🎵 น้องอับดุลกำลังแต่งเพลง + สร้าง Beat รอแป๊บนึงครับ...';
   player.classList.remove('on');
-  try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':localStorage.getItem('smk_api_key')||'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,
-        messages:[{role:'user',content:`แต่งเพลง RAP ไทย/อังกฤษ เกี่ยวกับ Samakee 99 (SMK) ใส่ Keyword: "${kw}"
 
-ข้อมูล SMK: ก่อตั้ง 1989, Metal Fabrication Expert, Cable Control Parts ให้ Yamaha/Honda, CNC/Stamping/Forging/Wire Bending, IATF16949, กรุงเทพฯ
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': localStorage.getItem('smk_api_key') || '',
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `แต่งเพลง RAP สำหรับบริษัท Samakee 99 (SMK) ใส่ Keyword: "${kw}"
 
-กติกาการแต่ง:
-- Format: [INTRO] → [VERSE 1] → [HOOK] → [VERSE 2] → [HOOK] → [OUTRO]
-- แต่ละ Verse มี 4 บรรทัด, Hook 4 บรรทัด ซ้ำ 2 รอบ
-- ใส่สัมผัสท้ายบรรทัดให้ฟังติดหู
-- เนื้อหาสนุก energetic โยกตามได้
-- ใส่ emoji ตกแต่ง 1-2 ตัวต่อ section
-- ทุกบรรทัดสั้นกระชับ ไม่เกิน 12 คำ เพื่อร้องตามได้
-- ใส่ชื่อ Keyword ที่ได้รับในเนื้อเพลงด้วย`}]})});
-    const d=await r.json();
-    const lyrics=d.content?.[0]?.text||'เกิดข้อผิดพลาด';
-    o.textContent = lyrics;
-    // Setup player
-    rapLines = buildLyricsLines(lyrics);
-    renderLyricsDisplay(rapLines);
-    initBeatGrid();
-    player.classList.add('on');
-    document.getElementById('playBtn').style.display='';
-    document.getElementById('stopBtn').style.display='none';
-  }catch(e){o.textContent='❌ เกิดข้อผิดพลาด กรุณาลองใหม่';}
-  b.disabled=false; b.textContent='🎤 GENERATE';
-}
+กฎสำคัญมาก — เพลงนี้จะถูกอ่านโดย Text-to-Speech ดังนั้น:
+- แต่ละบรรทัดต้องมีความยาว 5-8 คำเท่านั้น (สั้น กระชับ)
+- ใช้คำง่าย ออกเสียงได้ชัด ไม่ใช้คำซับซ้อน
+- ทุกบรรทัดลงจังหวะท้ายด้วยสัมผัส (คำคล้องจอง)
+- ห้ามใส่เครื่องหมายพิเศษกลางบรรทัด
+- emoji ใส่ต้นบรรทัด section header เท่านั้น
 
+Format:
+[INTRO]
+(2 บรรทัด แนะนำตัว SMK)
 
-const obs=new IntersectionObserver(es=>{es.forEach(e=>{
-  if(e.isIntersecting){
-    e.target.classList.add('show');
-    e.target.querySelectorAll('.mbar-fill,.cap-bar-fill').forEach(b=>{
-      const w=b.dataset.w;if(w)setTimeout(()=>b.style.width=w+'%',300);
+[VERSE 1]
+(4 บรรทัด เกี่ยวกับการผลิต/เครื่องจักร)
+
+[HOOK]
+(4 บรรทัด catchiest — ซ้ำ 2 รอบ)
+
+[VERSE 2]
+(4 บรรทัด ใส่ Keyword "${kw}" และลูกค้า Yamaha/Honda)
+
+[HOOK]
+(ซ้ำ Hook เดิม)
+
+[OUTRO]
+(2 บรรทัด ปิดท้าย)
+
+ข้อมูล SMK: Metal Fabrication Expert, ก่อตั้ง 1989, CNC/Stamping/Forging, IATF16949, กรุงเทพฯ`
+        }]
+      })
     });
-  }
-});},{threshold:.12});
-document.querySelectorAll('.anim').forEach(el=>obs.observe(el));
-setTimeout(()=>{
-  document.querySelectorAll('.mbar-fill,.cap-bar-fill').forEach(b=>{
-    if(b.closest('.anim')?.classList.contains('show')){const w=b.dataset.w;if(w)b.style.width=w+'%';}
-  });
-},700);
 
-// ── API KEY MANAGEMENT ──
-function saveApiKey() {
-  const val = document.getElementById('apiKeyInput').value.trim();
-  const err = document.getElementById('apiErr');
-  if (!val.startsWith('sk-ant-') && !val.startsWith('sk-')) {
-    err.style.display = 'block';
-    return;
+    const data   = await res.json();
+    const lyrics = data.content?.[0]?.text || 'เกิดข้อผิดพลาด';
+
+    outEl.textContent = lyrics;
+
+    // Build beat-locked schedule
+    const { chunks, rawLines } = buildSchedule(lyrics, rapBPM);
+    rapChunks   = chunks;
+    rapRawLines = rawLines;
+
+    renderLyrics(rawLines);
+    initGrid();
+    player.classList.add('on');
+    document.getElementById('playBtn').style.display = '';
+    document.getElementById('stopBtn').style.display = 'none';
+
+  } catch(e) {
+    outEl.textContent = '❌ เกิดข้อผิดพลาด กรุณาลองใหม่';
   }
-  err.style.display = 'none';
-  localStorage.setItem('smk_api_key', val);
-  document.getElementById('api-modal').classList.add('hidden');
+
+  btn.disabled = false; btn.textContent = '🎤 GENERATE';
 }
-// Check on load
-(function() {
-  const key = localStorage.getItem('smk_api_key');
-  if (key && (key.startsWith('sk-ant-') || key.startsWith('sk-'))) {
-    document.getElementById('api-modal').classList.add('hidden');
-  }
-})();
-
 </script></body></html>
