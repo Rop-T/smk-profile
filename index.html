@@ -810,12 +810,12 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
               <div class="voice-select-wrap">
                 <span style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--dim2);text-transform:uppercase;">Voice</span>
                 <select class="voice-select" id="voiceSelect">
-                  <option value="pNInz6obpgDQGcFmaJgB">Adam — พลังงานสูง</option>
-                  <option value="TxGEqnHWrfWFTfGW9XjX">Josh — เสียงทุ้ม</option>
-                  <option value="VR6AewLTigWG4xSOukaG">Arnold — เสียงดุ</option>
-                  <option value="ErXwobaYiN019PkySvjV">Antoni — นุ่มลึก</option>
-                  <option value="onwK4e9ZLuTAKqWW03F9">Daniel — ชัดเจน</option>
-                  <option value="g5CIjZEefAph4nQFvHAz">Ethan — สดใส</option>
+                  <option value="nPczCjzI2devNBz1zQrb">Brian — Multilingual ✓</option>
+                  <option value="N2lVS1w4EtoT3dr4eOWO">Callum — Multilingual ✓</option>
+                  <option value="IKne3meq5aSn9XLyUdCD">Charlie — Multilingual ✓</option>
+                  <option value="XB0fDUnXU5powFXDhCwa">Charlotte — Multilingual ✓</option>
+                  <option value="Zlb1dXrM653N07WRdFW3">Grace — Multilingual ✓</option>
+                  <option value="pFZP5JQG7iQjIQuC4Bku">Lily — Multilingual ✓</option>
                 </select>
               </div>
               <button class="elabs-play-btn" id="elabsPlayBtn" onclick="generateAndPlayVoice()">
@@ -1298,7 +1298,7 @@ let elabsWaveTimer  = null;
 let currentLyrics   = '';
 
 const ELABS_API = 'https://api.elevenlabs.io/v1/text-to-speech';
-const ELABS_MODEL = 'eleven_multilingual_v2';
+const ELABS_MODEL = 'eleven_multilingual_v2';  // Supports Thai with language_code:'th'
 
 // ── Init waveform bars ────────────────────────────────────
 function initElabsWave() {
@@ -1340,6 +1340,9 @@ async function fetchElabsAudio(text, voiceId, apiKey) {
     : `${ELABS_API}/${voiceId}?output_format=mp3_44100_128`;
 
   console.log('[ElevenLabs] Endpoint:', endpoint.slice(0, 60));
+  console.log('[ElevenLabs] Text being sent:', text.slice(0, 80));
+  const hasThai = /[\u0E00-\u0E7F]/.test(text);
+  console.log('[ElevenLabs] Contains Thai chars:', hasThai);
 
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -1352,6 +1355,7 @@ async function fetchElabsAudio(text, voiceId, apiKey) {
     body: JSON.stringify({
       text: text,
       model_id: ELABS_MODEL,
+      language_code: 'th',
       voice_settings: {
         stability: 0.30,
         similarity_boost: 0.75,
@@ -1386,10 +1390,16 @@ function parseLyricsToLines(text) {
 }
 
 function cleanLineForTTS(line) {
-  return line
+  // Keep Thai chars (\u0E00-\u0E7F), English, numbers, basic punctuation
+  // Remove only: emoji, brackets, markdown symbols
+  const cleaned = line
     .replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '')
     .replace(/[\[\]\*\_#]/g, '')
     .trim();
+  // Safety check: if no Thai chars after cleaning, skip this line
+  const hasThai = /[\u0E00-\u0E7F]/.test(cleaned);
+  console.log('[TTS Line]', hasThai ? 'Thai' : 'NO THAI', '—', cleaned.slice(0,40));
+  return cleaned;
 }
 
 // ── Main: generate all audio then play sequentially ──────
