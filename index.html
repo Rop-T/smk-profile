@@ -387,7 +387,7 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
     <button class="api-box-btn" onclick="saveApiKey()">เข้าสู่ระบบ →</button>
     <div class="api-box-note">
       API Key จะถูกเก็บไว้ใน Browser ของคุณเท่านั้น ไม่มีการส่งข้อมูลไปยังเซิร์ฟเวอร์ใดๆ<br>
-      ขอ Key ได้ที่ <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+      สร้าง Key ใหม่ได้ที่ <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--cyan)">console.anthropic.com → API Keys</a>
     </div>
   </div>
 </div>
@@ -406,11 +406,11 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
   <div style="display:flex;align-items:center;gap:12px;">
     <div class="nav-cert">ISO 9001 · IATF 16949</div>
     <button onclick="resetApiKey()" title="เปลี่ยน API Key"
-      style="background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.25);color:var(--cyan);
-             font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:4px 10px;
-             cursor:pointer;text-transform:uppercase;transition:all .2s;"
-      onmouseover="this.style.background='rgba(0,200,255,0.2)'"
-      onmouseout="this.style.background='rgba(0,200,255,0.1)'">
+      style="background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.35);color:var(--cyan);
+             font-family:var(--mono);font-size:9px;letter-spacing:.1em;padding:5px 12px;
+             cursor:pointer;text-transform:uppercase;transition:all .2s;border-radius:2px;"
+      onmouseover="this.style.background='rgba(0,200,255,0.25)'"
+      onmouseout="this.style.background='rgba(0,200,255,0.12)'">
       🔑 API KEY
     </button>
   </div>
@@ -880,19 +880,35 @@ function buildSchedule(lyrics, bpm) {
 
     // Split line into 2 half-bar chunks
     const words = clean.split(' ').filter(Boolean);
-    const mid   = Math.ceil(words.length / 2);
-    const halves = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')].filter(Boolean);
+    // Split into 3 chunks for longer lines (8-12 words) for natural rap phrasing
+    let parts;
+    if (words.length <= 5) {
+      parts = [words.join(' ')];
+    } else if (words.length <= 8) {
+      const m = Math.ceil(words.length / 2);
+      parts = [words.slice(0,m).join(' '), words.slice(m).join(' ')];
+    } else {
+      const t1 = Math.ceil(words.length / 3);
+      const t2 = Math.ceil(words.length * 2 / 3);
+      parts = [
+        words.slice(0, t1).join(' '),
+        words.slice(t1, t2).join(' '),
+        words.slice(t2).join(' ')
+      ];
+    }
+    parts = parts.filter(Boolean);
+    const partDur = (barMs * 1.5) / parts.length;
 
-    halves.forEach((chunk, ci) => {
+    parts.forEach((chunk, ci) => {
       chunks.push({
         text:    chunk,
         lineIdx: lineIdx,
-        timeMs:  timeMs + ci * halfBar,
+        timeMs:  timeMs + ci * partDur,
       });
     });
 
     lineIdx++;
-    timeMs += barMs;  // each line = exactly 1 bar
+    timeMs += barMs * 1.5;  // longer lines need 1.5 bars to breathe
   });
 
   return { chunks, rawLines, totalMs: timeMs };
@@ -944,7 +960,7 @@ function startRap() {
   startBeat();
 
   const bpm   = rapBPM;
-  const baseRate  = 1.55 + (bpm - 80) * 0.009;  // 88bpm → ~1.62, scales with BPM
+  const baseRate  = 1.45 + (bpm - 80) * 0.008;  // slightly slower for meaningful lyrics
   const basePitch = 0.88;
 
   // Cancel any residual speech
@@ -1024,35 +1040,45 @@ async function doRap(){
         max_tokens: 1000,
         messages: [{
           role: 'user',
-          content: `แต่งเพลง RAP สำหรับบริษัท Samakee 99 (SMK) ใส่ Keyword: "${kw}"
+          content: `แต่งเพลง RAP ภาษาไทย สไตล์ Fucking Hero และ Thaitanium สำหรับบริษัท Samakee 99 (SMK) โดยใส่ Keyword: "${kw}"
 
-กฎสำคัญมาก — เพลงนี้จะถูกอ่านโดย Text-to-Speech ดังนั้น:
-- แต่ละบรรทัดต้องมีความยาว 5-8 คำเท่านั้น (สั้น กระชับ)
-- ใช้คำง่าย ออกเสียงได้ชัด ไม่ใช้คำซับซ้อน
-- ทุกบรรทัดลงจังหวะท้ายด้วยสัมผัส (คำคล้องจอง)
-- ห้ามใส่เครื่องหมายพิเศษกลางบรรทัด
-- emoji ใส่ต้นบรรทัด section header เท่านั้น
+สไตล์ที่ต้องการ:
+- Flow แบบ Thaitanium: คำสัมผัสลึก ฟังแล้วโยกตาม จังหวะแน่น ภาษาไทยผสมอังกฤษเป็นธรรมชาติ
+- Storytelling แบบ Fucking Hero: มีความหมาย เล่าเรื่องได้ ภูมิใจในสิ่งที่ทำ ไม่โอ้อวดเกินจริง
+- เนื้อหาต้องมีความหมายจริงๆ เกี่ยวกับความภาคภูมิใจในงานช่างฝีมือ โรงงาน แรงงาน และคุณภาพ
 
-Format:
+กฎการแต่ง:
+- แต่ละบรรทัดยาว 8-12 คำ มีสัมผัสท้ายบรรทัดคู่กัน (บรรทัด 1 สัมผัสกับ 2, บรรทัด 3 กับ 4)
+- ใช้ภาษาไทยกลาง ผสมอังกฤษเฉพาะคำ technical เช่น CNC, ISO, quality
+- ห้ามใช้ภาษาหยาบ ให้ภูมิใจ มั่นใจ แต่ไม่โอ้อวด
+- ใส่ชีวิตจริงในโรงงาน: เสียงเครื่องจักร เหล็ก ไฟ ความแม่นยำ ทีมงาน
+- ใส่ Keyword "${kw}" ในเนื้อเพลงอย่างเป็นธรรมชาติ
+
+ข้อมูล SMK ที่ต้องใส่บางส่วน:
+- ก่อตั้ง 1989 ที่กรุงเทพฯ โดยคนไทย
+- ผลิตชิ้นส่วนโลหะ: CNC, Stamping, Forging, Wire Bending
+- ส่งชิ้นส่วนให้ Yamaha, Honda, Toyota — แบรนด์ระดับโลก
+- ได้มาตรฐาน ISO 9001 และ IATF 16949
+- "High Quality with Compatible Price" คือปรัชญา
+
+Format (ใช้ตัวอักษรเท่านั้น ไม่ต้องใส่ emoji กลางเนื้อเพลง):
+
 [INTRO]
-(2 บรรทัด แนะนำตัว SMK)
+(2 บรรทัด ปูเรื่อง บอกว่า SMK คือใคร)
 
 [VERSE 1]
-(4 บรรทัด เกี่ยวกับการผลิต/เครื่องจักร)
+(4 บรรทัด เล่าถึงงานช่างและโรงงาน)
 
 [HOOK]
-(4 บรรทัด catchiest — ซ้ำ 2 รอบ)
+(4 บรรทัด — จำง่าย ติดหู โยกได้ สัมผัสแน่น)
 
 [VERSE 2]
-(4 บรรทัด ใส่ Keyword "${kw}" และลูกค้า Yamaha/Honda)
+(4 บรรทัด ใส่ Keyword "${kw}" และความภูมิใจในคุณภาพ)
 
 [HOOK]
-(ซ้ำ Hook เดิม)
 
 [OUTRO]
-(2 บรรทัด ปิดท้าย)
-
-ข้อมูล SMK: Metal Fabrication Expert, ก่อตั้ง 1989, CNC/Stamping/Forging, IATF16949, กรุงเทพฯ`
+(2 บรรทัด จบแบบมั่นใจ)`
         }]
       })
     });
@@ -1095,34 +1121,39 @@ function saveApiKey() {
 }
 
 function resetApiKey() {
-  // Clear saved key and show modal again
   localStorage.removeItem('smk_api_key');
   const m = document.getElementById('api-modal');
-  if (m) { m.classList.remove('hidden'); }
+  if (m) m.classList.remove('hidden');
   const inp = document.getElementById('apiKeyInput');
-  if (inp) { inp.value = ''; inp.focus(); }
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 100); }
+  const err = document.getElementById('apiErr');
+  if (err) err.style.display = 'none';
 }
 
 function getApiKey() {
   const key = localStorage.getItem('smk_api_key') || '';
-  if (!key) {
-    // Show modal if key missing
+  if (!key || key.length < 20) {
+    localStorage.removeItem('smk_api_key');
     const m = document.getElementById('api-modal');
-    if (m) m.classList.remove('hidden');
+    if (m) {
+      m.classList.remove('hidden');
+      const inp = document.getElementById('apiKeyInput');
+      if (inp) setTimeout(() => inp.focus(), 100);
+    }
+    return '';
   }
   return key;
 }
 
-// Auto-hide modal if key already saved
+// Auto-hide modal only if key exists AND looks valid
 (function(){
   const key = localStorage.getItem('smk_api_key');
-  if (key && key.length > 10) {
-    const m = document.getElementById('api-modal');
-    if (m) m.classList.add('hidden');
-    console.log('Existing API key loaded, length:', key.length);
-  } else {
-    console.log('No API key found — showing modal');
+  const modal = document.getElementById('api-modal');
+  if (!modal) return;
+  if (key && key.length > 20) {
+    modal.classList.add('hidden');
   }
+  // Always show modal if key is missing or too short
 })();
 
 // ── SCROLL ANIMATIONS ───────────────────────────────────
