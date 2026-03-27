@@ -810,11 +810,12 @@ footer{background:#020308;border-top:1px solid var(--line);padding:28px 80px;dis
               <div class="voice-select-wrap">
                 <span style="font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--dim2);text-transform:uppercase;">Voice</span>
                 <select class="voice-select" id="voiceSelect">
-                  <option value="pNInz6obpgDQGcFmaJgB">Adam (Energetic)</option>
-                  <option value="TxGEqnHWrfWFTfGW9XjX">Josh (Deep)</option>
-                  <option value="VR6AewLTigWG4xSOukaG">Arnold (Strong)</option>
-                  <option value="ErXwobaYiN019PkySvjV">Antoni (Smooth)</option>
-                  <option value="yoZ06aMxZJJ28mfd3POQ">Sam (Confident)</option>
+                  <option value="pNInz6obpgDQGcFmaJgB">Adam — พลังงานสูง</option>
+                  <option value="TxGEqnHWrfWFTfGW9XjX">Josh — เสียงทุ้ม</option>
+                  <option value="VR6AewLTigWG4xSOukaG">Arnold — เสียงดุ</option>
+                  <option value="ErXwobaYiN019PkySvjV">Antoni — นุ่มลึก</option>
+                  <option value="onwK4e9ZLuTAKqWW03F9">Daniel — ชัดเจน</option>
+                  <option value="g5CIjZEefAph4nQFvHAz">Ethan — สดใส</option>
                 </select>
               </div>
               <button class="elabs-play-btn" id="elabsPlayBtn" onclick="generateAndPlayVoice()">
@@ -1220,7 +1221,7 @@ async function doRap(){
 
 หลักการแต่ง:
 - แต่ละบรรทัดมีสัมผัสท้าย บรรทัด 1 สัมผัสกับ 2, บรรทัด 3 สัมผัสกับ 4
-- ภาษาไทยกลาง ผสมอังกฤษเฉพาะคำ technical (CNC, ISO, quality, precision)
+- ภาษาไทยเป็นหลัก 80% ผสมอังกฤษเฉพาะคำสั้น (CNC, ISO) ห้ามมีบรรทัดอังกฤษล้วน
 - เนื้อหาพูดถึงชีวิตจริงในโรงงาน เสียงเครื่องจักร ความแม่นยำ ทีมงาน ความภูมิใจ
 - ใส่ Keyword "${kw}" ในเนื้อเพลงอย่างเป็นธรรมชาติ
 - ไม่ใช้ภาษาหยาบ แต่ให้ฟังดู authentic มีพลัง
@@ -1235,22 +1236,24 @@ async function doRap(){
 
 Format (ใส่ header ในวงเล็บเหลี่ยม):
 
-[INTRO]
-(2 บรรทัด)
+[บทนำ]
+(2 บรรทัด ปูเรื่อง บอกว่า SMK คือใคร)
 
-[VERSE 1]
-(4 บรรทัด — เล่าถึงงานช่างและโรงงาน)
+[เวิร์ส 1]
+(4 บรรทัด เล่าถึงงานช่างและโรงงาน ภาษาไทยทั้งหมด)
 
-[HOOK]
-(4 บรรทัด — ติดหู โยกได้ เป็น hook หลัก)
+[ฮุค]
+(4 บรรทัด ติดหู โยกได้ จำง่าย ภาษาไทยทั้งหมด)
 
-[VERSE 2]
-(4 บรรทัด — ใส่ Keyword และความภูมิใจในคุณภาพ)
+[เวิร์ส 2]
+(4 บรรทัด ใส่ Keyword ภาษาไทยเป็นหลัก)
 
-[HOOK]
+[ฮุค]
 
-[OUTRO]
-(2 บรรทัด — จบแบบมั่นใจ)`
+[เอ้าทรอ]
+(2 บรรทัด จบแบบมั่นใจ)
+
+ทุกบรรทัดเนื้อเพลงต้องเป็นภาษาไทยเป็นหลัก ห้ามมีบรรทัดอังกฤษล้วน`
         }]
       })
     });
@@ -1350,9 +1353,9 @@ async function fetchElabsAudio(text, voiceId, apiKey) {
       text: text,
       model_id: ELABS_MODEL,
       voice_settings: {
-        stability: 0.35,
+        stability: 0.30,
         similarity_boost: 0.75,
-        style: 0.45,
+        style: 0.50,
         use_speaker_boost: true,
       }
     })
@@ -1373,7 +1376,20 @@ async function fetchElabsAudio(text, voiceId, apiKey) {
 
 // ── Parse lyrics into lines for TTS ─────────────────────
 function parseLyricsToLines(text) {
-  return text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return text.split('\n')
+    .map(l => l.trim())
+    .filter(l => {
+      if (!l) return false;
+      if (/^\[.+\]$/.test(l)) return false; // skip [HEADER] lines
+      return l.replace(/[^\u0E00-\u0E7Fa-zA-Z0-9]/g,'').length > 2;
+    });
+}
+
+function cleanLineForTTS(line) {
+  return line
+    .replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{27FF}]/gu, '')
+    .replace(/[\[\]\*\_#]/g, '')
+    .trim();
 }
 
 // ── Main: generate all audio then play sequentially ──────
@@ -1422,7 +1438,7 @@ async function generateAndPlayVoice() {
     if (!elabsPlaying) break;
     setElabsStatus(`กำลังสร้างเสียง ${++generated}/${lines.length} — "${line.slice(0,20)}..."`, true);
     try {
-      const buf = await fetchElabsAudio(line, voiceId, apiKey);
+      const buf = await fetchElabsAudio(cleanLineForTTS(line), voiceId, apiKey);
       audioBuffers.push({ buf, line });
     } catch(e) {
       console.error('ElevenLabs error:', e.message);
